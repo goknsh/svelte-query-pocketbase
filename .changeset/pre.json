@@ -1,0 +1,8 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "svelte-query-pocketbase": "0.0.0"
+  },
+  "changesets": []
+}
