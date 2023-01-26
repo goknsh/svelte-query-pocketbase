@@ -1,8 +1,10 @@
 {
-	"mode": "pre",
-	"tag": "beta",
-	"initialVersions": {
-		"svelte-query-pocketbase": "0.0.0"
-	},
-	"changesets": []
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "svelte-query-pocketbase": "0.0.0"
+  },
+  "changesets": [
+    "eleven-mugs-glow"
+  ]
 }
