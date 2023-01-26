@@ -5,6 +5,7 @@
     "svelte-query-pocketbase": "0.0.0"
   },
   "changesets": [
+    "cold-cougars-learn",
     "eleven-mugs-glow",
     "gorgeous-houses-kneel"
   ]
