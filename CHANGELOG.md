@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.3
+
+### Patch Changes
+
+- [`2026df7`](https://github.com/goknsh/svelte-query-pocketbase/commit/2026df711b59c079c47f8e9dadd4f94e02cf98dc) Thanks [@goknsh](https://github.com/goknsh)! - fix: stringify query keys in debug messages
+
 ## 0.0.1-beta.2
 
 ### Patch Changes
