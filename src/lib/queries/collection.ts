@@ -179,10 +179,15 @@ export const createCollectionQuery = <
 						await unsubscribePromise
 					)();
 					if (
-						!collection.client.realtime['hasSubscriptionListeners'](collection.collectionIdOrName)
+						!collection.client.realtime['hasSubscriptionListeners'](
+							collection.collectionIdOrName
+						) ||
+						Object.keys(queryParams ?? {}).length > 0
 					) {
 						console.log(
-							`(C) ${JSON.stringify(queryKey)}: no realtime listeners, marking query as stale.`
+							`(C) ${JSON.stringify(
+								queryKey
+							)}: no realtime listeners or query has queryParams, marking query as stale.`
 						);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}

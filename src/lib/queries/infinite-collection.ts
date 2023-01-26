@@ -303,14 +303,8 @@ export const createInfiniteCollectionQuery = <
 					await (
 						await unsubscribePromise
 					)();
-					if (
-						!collection.client.realtime['hasSubscriptionListeners'](collection.collectionIdOrName)
-					) {
-						console.log(
-							`(IC) ${JSON.stringify(queryKey)}: no realtime listeners, marking query as stale.`
-						);
-						queryClient.invalidateQueries({ queryKey, exact: true });
-					}
+					console.log(`(IC) ${JSON.stringify(queryKey)}: marking query as stale.`);
+					queryClient.invalidateQueries({ queryKey, exact: true });
 				})();
 				return unsubscriber();
 			};

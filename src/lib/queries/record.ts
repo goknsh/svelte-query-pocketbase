@@ -172,11 +172,17 @@ export const createRecordQuery = <
 					if (
 						!collection.client.realtime['hasSubscriptionListeners'](
 							`${collection.collectionIdOrName}/${id}`
-						)
+						) ||
+						Object.keys(queryParams ?? {}).length > 0
 					) {
 						console.log(
-							`(R) ${JSON.stringify(queryKey)}: no realtime listeners, marking query as stale.`
+							`(R) ${JSON.stringify(
+								queryKey
+							)}: no realtime listeners or query has queryParams, marking query as stale.`
 						);
+						// todo: correctly derive queryKey to mark as invalid
+						// todo: ensure that if a $store was passed into filterFunction,
+						// only the value when query was created with is used even after the $store's value changes
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
 				})();
