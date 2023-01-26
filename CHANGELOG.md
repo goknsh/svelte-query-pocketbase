@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.5
+
+### Patch Changes
+
+- [`293013b`](https://github.com/goknsh/svelte-query-pocketbase/commit/293013bb3d3d0d4ee060c37f5f56f0125acf5320) Thanks [@goknsh](https://github.com/goknsh)! - fix: correct argument for hasSubscriptionListeners in all collection queries
+
 ## 0.0.1-beta.4
 
 ### Patch Changes
