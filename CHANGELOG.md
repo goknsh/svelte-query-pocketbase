@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.6
+
+### Patch Changes
+
+- [`8a8d2a2`](https://github.com/goknsh/svelte-query-pocketbase/commit/8a8d2a28a002d3caf55b785e73f57a7f523e1f88) Thanks [@goknsh](https://github.com/goknsh)! - fix: change how queries are invalidated
+
 ## 0.0.1-beta.5
 
 ### Patch Changes
