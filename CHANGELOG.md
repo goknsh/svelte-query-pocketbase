@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.4
+
+### Patch Changes
+
+- [`89e1e8e`](https://github.com/goknsh/svelte-query-pocketbase/commit/89e1e8e42993151802f9e25af799a90ebde68a33) Thanks [@goknsh](https://github.com/goknsh)! - (breaking) fix!: correct implementation of queryKey factory and internal usages of it
+
 ## 0.0.1-beta.3
 
 ### Patch Changes
