@@ -18,7 +18,7 @@ import { collectionKeys } from '../query-key-factory';
 import { realtimeStoreExpand } from '../internal';
 import type { CollectionStoreOptions, QueryPrefetchOptions } from '../types';
 
-const collectionStoreCallback = async <T extends Record = Record>(
+const collectionStoreCallback = async <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
 	list: T[],
 	subscription: RecordSubscription<T>,
 	collection: ReturnType<Client['collection']>,
@@ -46,13 +46,13 @@ const collectionStoreCallback = async <T extends Record = Record>(
 	}
 };
 
-export const createCollectionQueryInitialData = <T extends Record = Record>(
+export const createCollectionQueryInitialData = <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
 	collection: ReturnType<Client['collection']>,
 	{ queryParams = undefined }: { queryParams?: RecordListQueryParams }
 ): Promise<Array<T>> => collection.getFullList<T>(undefined, queryParams);
 
 export const createCollectionQueryPrefetch = <
-	T extends Record = Record,
+	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -92,7 +92,7 @@ export const createCollectionQueryPrefetch = <
  * @param [options.disableRealtime] Only performs the initial fetch and does not subscribe to anything. This has an effect only when provided client-side.
  */
 export const createCollectionQuery = <
-	T extends Record = Record,
+	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,

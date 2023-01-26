@@ -121,7 +121,9 @@ const infiniteCollectionStoreCallback = async <T extends Pick<Record, 'id'>>(
 	return { data, invalidatePages };
 };
 
-export const infiniteCollectionQueryInitialData = <T extends Record = Record>(
+export const infiniteCollectionQueryInitialData = <
+	T extends Pick<Record, 'id'> = Pick<Record, 'id'>
+>(
 	collection: ReturnType<Client['collection']>,
 	{
 		page = 1,
@@ -131,7 +133,7 @@ export const infiniteCollectionQueryInitialData = <T extends Record = Record>(
 ): Promise<ListResult<T>> => collection.getList<T>(page, perPage, queryParams);
 
 export const infiniteCollectionQueryPrefetch = <
-	T extends Record = Record,
+	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -159,7 +161,7 @@ export const infiniteCollectionQueryPrefetch = <
 });
 
 export const createInfiniteCollectionQuery = <
-	T extends Record = Record,
+	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,

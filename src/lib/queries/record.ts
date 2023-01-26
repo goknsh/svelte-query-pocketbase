@@ -18,7 +18,7 @@ import { collectionKeys } from '../query-key-factory';
 import { realtimeStoreExpand } from '../internal';
 import type { QueryPrefetchOptions, RecordStoreOptions } from '../types';
 
-const createRecordQueryCallback = async <T extends Record = Record>(
+const createRecordQueryCallback = async <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
 	item: T | null,
 	subscription: RecordSubscription<T>,
 	collection: ReturnType<Client['collection']>,
@@ -36,14 +36,14 @@ const createRecordQueryCallback = async <T extends Record = Record>(
 	}
 };
 
-export const createRecordQueryInitialData = <T extends Record = Record>(
+export const createRecordQueryInitialData = <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
 	collection: ReturnType<Client['collection']>,
 	id: string,
 	{ queryParams = undefined }: { queryParams?: RecordQueryParams }
 ): Promise<T> => collection.getOne<T>(id, queryParams);
 
 export const createRecordQueryPrefetch = <
-	T extends Record = Record,
+	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -78,7 +78,10 @@ export const createRecordQueryPrefetch = <
  * @param [options.initial] If provided, skips initial data fetching and uses the provided value instead. Useful if you want to perform initial fetch during SSR and initialize a realtime subscription client-side.
  * @param [options.disableRealtime] Only performs the initial fetch and does not subscribe to anything. This has an effect only when provided client-side.
  */
-export const createRecordQuery = <T extends Record = Record, TQueryKey extends QueryKey = QueryKey>(
+export const createRecordQuery = <
+	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
+	TQueryKey extends QueryKey = QueryKey
+>(
 	collection: ReturnType<Client['collection']>,
 	id: string,
 	{
