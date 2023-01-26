@@ -54,7 +54,7 @@ export const createRecordQueryPrefetch = <
 		queryKey = collectionKeys({
 			collection,
 			id,
-			...(queryParams && { queryParams })
+			...(queryParams && queryParams)
 		}) as unknown as TQueryKey,
 		...options
 	}: QueryPrefetchOptions<T, ClientResponseError, T, TQueryKey> = {}
@@ -91,7 +91,7 @@ export const createRecordQuery = <
 		queryKey = collectionKeys({
 			collection,
 			id,
-			...(queryParams && { queryParams })
+			...(queryParams && queryParams)
 		}) as unknown as TQueryKey,
 		enabled = true,
 		disableRealtime = false,
@@ -129,7 +129,7 @@ export const createRecordQuery = <
 						)
 							.then((r) => {
 								console.log(
-									`(R) [${JSON.stringify(queryKey)}]: updating with realtime action:`,
+									`(R) ${JSON.stringify(queryKey)}: updating with realtime action:`,
 									data.action,
 									data.record.id
 								);
@@ -137,7 +137,7 @@ export const createRecordQuery = <
 							})
 							.catch((e) => {
 								console.log(
-									`(R) [${JSON.stringify(queryKey)}]: invalidating query due to callback error:`,
+									`(R) ${JSON.stringify(queryKey)}: invalidating query due to callback error:`,
 									e
 								);
 								if (invalidateQueryOnRealtimeError) {
@@ -161,10 +161,10 @@ export const createRecordQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log(`(R) [${JSON.stringify(queryKey)}]: subscribing to changes...`);
+			console.log(`(R) ${JSON.stringify(queryKey)}: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log(`(R) [${JSON.stringify(queryKey)}]: unsubscribing from store.`);
+				console.log(`(R) ${JSON.stringify(queryKey)}: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -175,7 +175,7 @@ export const createRecordQuery = <
 						)
 					) {
 						console.log(
-							`(R) [${JSON.stringify(queryKey)}]: no realtime listeners, marking query as stale.`
+							`(R) ${JSON.stringify(queryKey)}: no realtime listeners, marking query as stale.`
 						);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}

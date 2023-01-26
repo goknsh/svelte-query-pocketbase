@@ -61,7 +61,7 @@ export const createCollectionQueryPrefetch = <
 		queryParams = undefined,
 		queryKey = collectionKeys({
 			collection,
-			...(queryParams && { queryParams })
+			...(queryParams && queryParams)
 		}) as unknown as TQueryKey,
 		...options
 	}: QueryPrefetchOptions<Array<T>, ClientResponseError, Array<T>, TQueryKey> = {}
@@ -100,7 +100,7 @@ export const createCollectionQuery = <
 		queryParams = undefined,
 		queryKey = collectionKeys({
 			collection,
-			...(queryParams && { queryParams })
+			...(queryParams && queryParams)
 		}) as unknown as TQueryKey,
 		enabled = true,
 		disableRealtime = false,
@@ -132,7 +132,7 @@ export const createCollectionQuery = <
 						)
 							.then((r) => {
 								console.log(
-									`(C) [${JSON.stringify(queryKey)}]: updating with realtime action:`,
+									`(C) ${JSON.stringify(queryKey)}: updating with realtime action:`,
 									data.action,
 									data.record.id
 								);
@@ -146,7 +146,7 @@ export const createCollectionQuery = <
 							})
 							.catch((e) => {
 								console.log(
-									`(C) [${JSON.stringify(queryKey)}]: invalidating query due to callback error:`,
+									`(C) ${JSON.stringify(queryKey)}: invalidating query due to callback error:`,
 									e
 								);
 								if (invalidateQueryOnRealtimeError) {
@@ -170,10 +170,10 @@ export const createCollectionQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log(`(C) [${JSON.stringify(queryKey)}]: subscribing to changes...`);
+			console.log(`(C) ${JSON.stringify(queryKey)}: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log(`(C) [${JSON.stringify(queryKey)}]: unsubscribing from store.`);
+				console.log(`(C) ${JSON.stringify(queryKey)}: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -184,7 +184,7 @@ export const createCollectionQuery = <
 						)
 					) {
 						console.log(
-							`(C) [${JSON.stringify(queryKey)}]: no realtime listeners, marking query as stale.`
+							`(C) ${JSON.stringify(queryKey)}: no realtime listeners, marking query as stale.`
 						);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}

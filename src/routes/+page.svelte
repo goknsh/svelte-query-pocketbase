@@ -6,7 +6,9 @@
 
 	const pocketbase = new Pocketbase('https://voel.local');
 
-	const query = createInfiniteCollectionQuery(pocketbase.collection('test'), { page: 2 });
+	const query = createCollectionQuery(pocketbase.collection('test'), {
+		queryParams: { filter: '' }
+	});
 
 	// onMount(() => {
 	// 	setTimeout(() => {

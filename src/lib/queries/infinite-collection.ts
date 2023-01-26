@@ -144,9 +144,9 @@ export const infiniteCollectionQueryPrefetch = <
 		queryParams = undefined,
 		queryKey = collectionKeys({
 			collection,
+			...(queryParams && queryParams),
 			...(page && { page }),
-			...(perPage && { perPage }),
-			...(queryParams && { queryParams })
+			...(perPage && { perPage })
 		}) as unknown as TQueryKey,
 		...options
 	}: InfiniteQueryPrefetchOptions<ListResult<T>, ClientResponseError, ListResult<T>, TQueryKey> = {}
@@ -171,9 +171,9 @@ export const createInfiniteCollectionQuery = <
 		queryParams = undefined,
 		queryKey = collectionKeys({
 			collection,
+			...(queryParams && queryParams),
 			...(page && { page }),
-			...(perPage && { perPage }),
-			...(queryParams && { queryParams })
+			...(perPage && { perPage })
 		}) as unknown as TQueryKey,
 		enabled = true,
 		disableRealtime = false,
@@ -257,7 +257,7 @@ export const createInfiniteCollectionQuery = <
 						)
 							.then((r) => {
 								console.log(
-									`(IC) [${JSON.stringify(queryKey)}]: updating with realtime action:`,
+									`(IC) ${JSON.stringify(queryKey)}: updating with realtime action:`,
 									data.action,
 									data.record.id
 								);
@@ -271,7 +271,7 @@ export const createInfiniteCollectionQuery = <
 							})
 							.catch((e) => {
 								console.log(
-									`(IC) [${JSON.stringify(queryKey)}]: invalidating query due to callback error:`,
+									`(IC) ${JSON.stringify(queryKey)}: invalidating query due to callback error:`,
 									e
 								);
 								if (invalidateQueryOnRealtimeError) {
@@ -295,10 +295,10 @@ export const createInfiniteCollectionQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log(`(IC) [${JSON.stringify(queryKey)}]: subscribing to changes...`);
+			console.log(`(IC) ${JSON.stringify(queryKey)}: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log(`(IC) [${JSON.stringify(queryKey)}]: unsubscribing from store.`);
+				console.log(`(IC) ${JSON.stringify(queryKey)}: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -309,7 +309,7 @@ export const createInfiniteCollectionQuery = <
 						)
 					) {
 						console.log(
-							`(IC) [${JSON.stringify(queryKey)}]: no realtime listeners, marking query as stale.`
+							`(IC) ${JSON.stringify(queryKey)}: no realtime listeners, marking query as stale.`
 						);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
