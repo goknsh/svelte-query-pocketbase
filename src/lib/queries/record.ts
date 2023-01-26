@@ -128,19 +128,26 @@ export const createRecordQuery = <
 							queryParams
 						)
 							.then((r) => {
-								console.log('setting data to:', r);
+								console.log(
+									`(R) [${queryKey}]: updating with realtime action:`,
+									data.action,
+									data.record.id
+								);
 								queryClient.setQueryData<T | null>(queryKey, () => r);
 							})
-							.catch(() => {
-								console.log('invalidating query');
+							.catch((e) => {
+								console.log(`(R) [${queryKey}]: invalidating query due to callback error:`, e);
 								if (invalidateQueryOnRealtimeError) {
 									queryClient.invalidateQueries({ queryKey, exact: true });
 								}
 							});
 						options.onRealtimeUpdate?.(data);
 					})
-					.catch(() => {
-						console.log('invalidating query');
+					.catch((e) => {
+						console.log(
+							`(R) [${queryKey}]: invalidating query due to realtime subscription error:`,
+							e
+						);
 						if (invalidateQueryOnRealtimeError) {
 							queryClient.invalidateQueries({ queryKey, exact: true });
 						}
@@ -149,10 +156,10 @@ export const createRecordQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log('subscribing!');
+			console.log(`(R) [${queryKey}]: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log('unsubscribing!');
+				console.log(`(R) [${queryKey}]: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -162,7 +169,7 @@ export const createRecordQuery = <
 							`${collection.collectionIdOrName}/${id}`
 						)
 					) {
-						console.log('no listeners. marking stale.');
+						console.log(`(R) [${queryKey}]: no realtime listeners, marking query as stale.`);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
 				})();

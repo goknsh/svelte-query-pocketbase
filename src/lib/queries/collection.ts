@@ -56,13 +56,11 @@ export const createCollectionQueryPrefetch = <
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
-	id: string,
 	{
 		staleTime = Infinity,
 		queryParams = undefined,
 		queryKey = collectionKeys({
 			collection,
-			id,
 			...(queryParams && { queryParams })
 		}) as unknown as TQueryKey,
 		...options
@@ -133,7 +131,11 @@ export const createCollectionQuery = <
 							queryParams
 						)
 							.then((r) => {
-								console.log('setting data to:', r);
+								console.log(
+									`(C) [${queryKey}]: updating with realtime action:`,
+									data.action,
+									data.record.id
+								);
 								queryClient.setQueryData<T[]>(queryKey, () =>
 									options.filterFunction
 										? r
@@ -142,16 +144,19 @@ export const createCollectionQuery = <
 										: r.sort(options.sortFunction)
 								);
 							})
-							.catch(() => {
-								console.log('invalidating query');
+							.catch((e) => {
+								console.log(`(C) [${queryKey}]: invalidating query due to callback error:`, e);
 								if (invalidateQueryOnRealtimeError) {
 									queryClient.invalidateQueries({ queryKey, exact: true });
 								}
 							});
 						options.onRealtimeUpdate?.(data);
 					})
-					.catch(() => {
-						console.log('invalidating query');
+					.catch((e) => {
+						console.log(
+							`(C) [${queryKey}]: invalidating query due to realtime subscription error:`,
+							e
+						);
 						if (invalidateQueryOnRealtimeError) {
 							queryClient.invalidateQueries({ queryKey, exact: true });
 						}
@@ -160,10 +165,10 @@ export const createCollectionQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log('subscribing!');
+			console.log(`(C) [${queryKey}]: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log('unsubscribing!');
+				console.log(`(C) [${queryKey}]: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -173,7 +178,7 @@ export const createCollectionQuery = <
 							`${collection.collectionIdOrName}/*`
 						)
 					) {
-						console.log('no listeners. marking stale.');
+						console.log(`(C) [${queryKey}]: no realtime listeners, marking query as stale.`);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
 				})();

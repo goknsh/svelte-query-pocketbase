@@ -28,7 +28,7 @@ const infiniteCollectionStoreCallback = async <T extends Pick<Record, 'id'>>(
 	perPage: number,
 	queryParams: RecordListQueryParams | undefined = undefined,
 	sortFunction?: (a: T, b: T) => number,
-	filterFunction?: (value: T, index: number, array: T[]) => T[],
+	filterFunction?: (value: T, index: number, array: T[]) => boolean,
 	filterFunctionThisArg?: any,
 	ignoreUnknownRecords = true
 ): Promise<{ data: InfiniteData<ListResult<T>>; invalidatePages: Set<number> }> => {
@@ -137,7 +137,6 @@ export const infiniteCollectionQueryPrefetch = <
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
-	id: string,
 	{
 		staleTime = Infinity,
 		page = 1,
@@ -145,7 +144,6 @@ export const infiniteCollectionQueryPrefetch = <
 		queryParams = undefined,
 		queryKey = collectionKeys({
 			collection,
-			id,
 			...(page && { page }),
 			...(perPage && { perPage }),
 			...(queryParams && { queryParams })
@@ -258,7 +256,11 @@ export const createInfiniteCollectionQuery = <
 							ignoreUnknownRecords
 						)
 							.then((r) => {
-								console.log('setting data to:', r);
+								console.log(
+									`(IC) [${queryKey}]: updating with realtime action:`,
+									data.action,
+									data.record.id
+								);
 								queryClient.setQueryData<InfiniteData<ListResult<T>>>(queryKey, () => r.data);
 								queryClient.invalidateQueries<ListResult<T>>({
 									queryKey,
@@ -268,15 +270,18 @@ export const createInfiniteCollectionQuery = <
 								});
 							})
 							.catch((e) => {
-								console.log('invalidating query', e);
+								console.log(`(IC) [${queryKey}]: invalidating query due to callback error:`, e);
 								if (invalidateQueryOnRealtimeError) {
 									queryClient.invalidateQueries({ queryKey, exact: true });
 								}
 							});
 						options.onRealtimeUpdate?.(data);
 					})
-					.catch(() => {
-						console.log('invalidating query');
+					.catch((e) => {
+						console.log(
+							`(IC) [${queryKey}]: invalidating query due to realtime subscription error:`,
+							e
+						);
 						if (invalidateQueryOnRealtimeError) {
 							queryClient.invalidateQueries({ queryKey, exact: true });
 						}
@@ -285,10 +290,10 @@ export const createInfiniteCollectionQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log('subscribing!');
+			console.log(`(IC) [${queryKey}]: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log('unsubscribing!');
+				console.log(`(IC) [${queryKey}]: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -298,7 +303,7 @@ export const createInfiniteCollectionQuery = <
 							`${collection.collectionIdOrName}/*`
 						)
 					) {
-						console.log('no listeners. marking stale.');
+						console.log(`(IC) [${queryKey}]: no realtime listeners, marking query as stale.`);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
 				})();
