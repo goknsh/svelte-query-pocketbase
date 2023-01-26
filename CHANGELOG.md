@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.1
+
+### Patch Changes
+
+- [`b362724`](https://github.com/goknsh/svelte-query-pocketbase/commit/b362724a5e86f2ecdabd96e7024e6c539a9563d2) Thanks [@goknsh](https://github.com/goknsh)! - fix: correct filterFunction's return type
+
 ## 0.0.1-beta.0
 
 ### Patch Changes
