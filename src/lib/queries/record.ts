@@ -129,14 +129,17 @@ export const createRecordQuery = <
 						)
 							.then((r) => {
 								console.log(
-									`(R) [${queryKey}]: updating with realtime action:`,
+									`(R) [${JSON.stringify(queryKey)}]: updating with realtime action:`,
 									data.action,
 									data.record.id
 								);
 								queryClient.setQueryData<T | null>(queryKey, () => r);
 							})
 							.catch((e) => {
-								console.log(`(R) [${queryKey}]: invalidating query due to callback error:`, e);
+								console.log(
+									`(R) [${JSON.stringify(queryKey)}]: invalidating query due to callback error:`,
+									e
+								);
 								if (invalidateQueryOnRealtimeError) {
 									queryClient.invalidateQueries({ queryKey, exact: true });
 								}
@@ -145,7 +148,9 @@ export const createRecordQuery = <
 					})
 					.catch((e) => {
 						console.log(
-							`(R) [${queryKey}]: invalidating query due to realtime subscription error:`,
+							`(R) [${JSON.stringify(
+								queryKey
+							)}]: invalidating query due to realtime subscription error:`,
 							e
 						);
 						if (invalidateQueryOnRealtimeError) {
@@ -156,10 +161,10 @@ export const createRecordQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log(`(R) [${queryKey}]: subscribing to changes...`);
+			console.log(`(R) [${JSON.stringify(queryKey)}]: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log(`(R) [${queryKey}]: unsubscribing from store.`);
+				console.log(`(R) [${JSON.stringify(queryKey)}]: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -169,7 +174,9 @@ export const createRecordQuery = <
 							`${collection.collectionIdOrName}/${id}`
 						)
 					) {
-						console.log(`(R) [${queryKey}]: no realtime listeners, marking query as stale.`);
+						console.log(
+							`(R) [${JSON.stringify(queryKey)}]: no realtime listeners, marking query as stale.`
+						);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
 				})();

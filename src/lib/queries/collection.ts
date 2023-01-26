@@ -132,7 +132,7 @@ export const createCollectionQuery = <
 						)
 							.then((r) => {
 								console.log(
-									`(C) [${queryKey}]: updating with realtime action:`,
+									`(C) [${JSON.stringify(queryKey)}]: updating with realtime action:`,
 									data.action,
 									data.record.id
 								);
@@ -145,7 +145,10 @@ export const createCollectionQuery = <
 								);
 							})
 							.catch((e) => {
-								console.log(`(C) [${queryKey}]: invalidating query due to callback error:`, e);
+								console.log(
+									`(C) [${JSON.stringify(queryKey)}]: invalidating query due to callback error:`,
+									e
+								);
 								if (invalidateQueryOnRealtimeError) {
 									queryClient.invalidateQueries({ queryKey, exact: true });
 								}
@@ -154,7 +157,9 @@ export const createCollectionQuery = <
 					})
 					.catch((e) => {
 						console.log(
-							`(C) [${queryKey}]: invalidating query due to realtime subscription error:`,
+							`(C) [${JSON.stringify(
+								queryKey
+							)}]: invalidating query due to realtime subscription error:`,
 							e
 						);
 						if (invalidateQueryOnRealtimeError) {
@@ -165,10 +170,10 @@ export const createCollectionQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log(`(C) [${queryKey}]: subscribing to changes...`);
+			console.log(`(C) [${JSON.stringify(queryKey)}]: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log(`(C) [${queryKey}]: unsubscribing from store.`);
+				console.log(`(C) [${JSON.stringify(queryKey)}]: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -178,7 +183,9 @@ export const createCollectionQuery = <
 							`${collection.collectionIdOrName}/*`
 						)
 					) {
-						console.log(`(C) [${queryKey}]: no realtime listeners, marking query as stale.`);
+						console.log(
+							`(C) [${JSON.stringify(queryKey)}]: no realtime listeners, marking query as stale.`
+						);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
 				})();
