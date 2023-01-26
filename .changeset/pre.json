@@ -5,6 +5,7 @@
     "svelte-query-pocketbase": "0.0.0"
   },
   "changesets": [
+    "beige-kiwis-cough",
     "cold-cougars-learn",
     "dirty-dingos-sip",
     "eleven-mugs-glow",
