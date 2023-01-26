@@ -81,7 +81,7 @@ export interface CollectionStoreOptions<
 		value: TQueryFnDataSingular,
 		index: number,
 		array: TQueryFnDataSingular[]
-	) => TQueryFnDataSingular[];
+	) => boolean;
 	filterFunctionThisArg?: any;
 }
 
@@ -109,6 +109,6 @@ export interface InfiniteCollectionStoreOptions<
 		value: TQueryFnDataSingular,
 		index: number,
 		array: TQueryFnDataSingular[]
-	) => TQueryFnDataSingular[];
+	) => boolean;
 	filterFunctionThisArg?: any;
 }
