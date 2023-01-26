@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.2
+
+### Patch Changes
+
+- (breaking) fix!: remove id arg from all collection prefetches, and better log messages
+
 ## 0.0.1-beta.1
 
 ### Patch Changes
