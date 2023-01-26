@@ -179,9 +179,7 @@ export const createCollectionQuery = <
 						await unsubscribePromise
 					)();
 					if (
-						!collection.client.realtime['hasSubscriptionListeners'](
-							`${collection.collectionIdOrName}/*`
-						)
+						!collection.client.realtime['hasSubscriptionListeners'](collection.collectionIdOrName)
 					) {
 						console.log(
 							`(C) ${JSON.stringify(queryKey)}: no realtime listeners, marking query as stale.`
