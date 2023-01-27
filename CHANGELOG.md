@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.7
+
+### Patch Changes
+
+- [`4705c05`](https://github.com/goknsh/svelte-query-pocketbase/commit/4705c059a034857fd6f9e04926d5b8d178374f26) Thanks [@goknsh](https://github.com/goknsh)! - chore: export infinite collection query
+
 ## 0.0.1-beta.6
 
 ### Patch Changes
