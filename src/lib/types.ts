@@ -96,7 +96,6 @@ export interface InfiniteCollectionStoreOptions<
 	disableRealtime?: boolean;
 	invalidateQueryOnRealtimeError?: boolean;
 	keepCurrentPageOnly?: boolean;
-	ignoreUnknownRecords?: boolean;
 	/**
 	 * This callback will fire any time the realtime subscription receives an update.
 	 */

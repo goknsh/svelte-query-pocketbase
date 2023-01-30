@@ -1,5 +1,6 @@
 import {
 	createQuery,
+	type QueryClient,
 	useQueryClient,
 	type CreateQueryResult,
 	type FetchQueryOptions,
@@ -18,32 +19,55 @@ import { collectionKeys } from '../query-key-factory';
 import { realtimeStoreExpand } from '../internal';
 import type { QueryPrefetchOptions, RecordStoreOptions } from '../types';
 
-const createRecordQueryCallback = async <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
-	item: T | null,
+const createRecordQueryCallback = async <
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
+	TQueryKey extends QueryKey = QueryKey
+>(
+	queryClient: QueryClient,
+	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
 	collection: ReturnType<Client['collection']>,
 	queryParams: RecordQueryParams | undefined = undefined
 ) => {
-	switch (subscription.action) {
-		case 'update':
-			return await realtimeStoreExpand(collection, subscription.record, queryParams?.expand);
-		case 'create':
-			return await realtimeStoreExpand(collection, subscription.record, queryParams?.expand);
-		case 'delete':
-			return null;
-		default:
-			return item;
+	let data = queryClient.getQueryData<T | null>(queryKey);
+
+	let expandedRecord = subscription.record;
+	if (data ? new Date(expandedRecord.updated) > new Date(data.updated) : true) {
+		if (
+			(subscription.action === 'update' || subscription.action === 'create') &&
+			queryParams?.expand
+		) {
+			expandedRecord = await realtimeStoreExpand(
+				collection,
+				subscription.record,
+				queryParams.expand
+			);
+			// get data again because the cache could've changed while we were awaiting the expand
+			data = queryClient.getQueryData<T | null>(queryKey);
+		}
+
+		switch (subscription.action) {
+			case 'update':
+			case 'create':
+				queryClient.setQueryData(queryKey, () => expandedRecord);
+				break;
+			case 'delete':
+				queryClient.setQueryData(queryKey, () => null);
+				break;
+		}
 	}
 };
 
-export const createRecordQueryInitialData = <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
+export const createRecordQueryInitialData = <
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
+>(
 	collection: ReturnType<Client['collection']>,
 	id: string,
 	{ queryParams = undefined }: { queryParams?: RecordQueryParams }
 ): Promise<T> => collection.getOne<T>(id, queryParams);
 
 export const createRecordQueryPrefetch = <
-	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -65,21 +89,8 @@ export const createRecordQueryPrefetch = <
 	queryFn: async () => await createRecordQueryInitialData<T>(collection, id, { queryParams })
 });
 
-/**
- * Readable async Svelte store wrapper around a Pocketbase record that updates in realtime.
- *
- * Notes:
- * - When running server-side, this store returns the "empty version" version of this store, i.e. `undefined`.
- * - If a delete action is received via the realtime subscription, the store's value changes to `undefined`.
- *
- * @param collection Collection the record is a part of whose updates to fetch in realtime.
- * @param id ID of the Pocketbase record which will be updated in realtime.
- * @param [options.queryParams] Pocketbase query paramteres to apply on initial data fetch and everytime an update is received via the realtime subscription. **Only `expand` field is used when an action is received via the realtime subscription.**
- * @param [options.initial] If provided, skips initial data fetching and uses the provided value instead. Useful if you want to perform initial fetch during SSR and initialize a realtime subscription client-side.
- * @param [options.disableRealtime] Only performs the initial fetch and does not subscribe to anything. This has an effect only when provided client-side.
- */
 export const createRecordQuery = <
-	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -121,19 +132,13 @@ export const createRecordQuery = <
 			? async () => {}
 			: collection
 					.subscribe<T>(id, (data) => {
-						createRecordQueryCallback(
-							queryClient.getQueryData<T | null>(queryKey) ?? null,
-							data,
-							collection,
-							queryParams
-						)
-							.then((r) => {
+						createRecordQueryCallback(queryClient, queryKey, data, collection, queryParams)
+							.then(() => {
 								console.log(
 									`(R) ${JSON.stringify(queryKey)}: updating with realtime action:`,
 									data.action,
 									data.record.id
 								);
-								queryClient.setQueryData<T | null>(queryKey, () => r);
 							})
 							.catch((e) => {
 								console.log(

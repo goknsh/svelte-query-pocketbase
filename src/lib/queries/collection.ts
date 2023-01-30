@@ -1,10 +1,13 @@
 import {
 	createQuery,
+	type QueryClient,
 	useQueryClient,
 	type CreateQueryResult,
 	type FetchQueryOptions,
 	type QueryKey
 } from '@tanstack/svelte-query';
+
+import { setAutoFreeze, produce, type Draft } from 'immer';
 
 import type Client from 'pocketbase';
 import type {
@@ -18,41 +21,90 @@ import { collectionKeys } from '../query-key-factory';
 import { realtimeStoreExpand } from '../internal';
 import type { CollectionStoreOptions, QueryPrefetchOptions } from '../types';
 
-const collectionStoreCallback = async <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
-	list: T[],
+setAutoFreeze(false);
+
+const collectionStoreCallback = async <
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
+	TQueryKey extends QueryKey = QueryKey
+>(
+	queryClient: QueryClient,
+	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
 	collection: ReturnType<Client['collection']>,
-	queryParams: RecordListQueryParams | undefined = undefined
+	queryParams: RecordListQueryParams | undefined = undefined,
+	sortFunction?: (a: T, b: T) => number,
+	filterFunction?: (value: T, index: number, array: T[]) => boolean,
+	filterFunctionThisArg?: any
 ) => {
+	let data = queryClient.getQueryData<T[]>(queryKey) ?? [];
+
+	let expandedRecord = subscription.record;
+	if (
+		(subscription.action === 'update' || subscription.action === 'create') &&
+		queryParams?.expand
+	) {
+		expandedRecord = await realtimeStoreExpand(collection, subscription.record, queryParams.expand);
+		// get data again because the cache could've changed while we were awaiting the expand
+		data = queryClient.getQueryData<T[]>(queryKey) ?? [];
+	}
+
+	let actionIgnored = false;
 	switch (subscription.action) {
 		case 'update':
-			subscription.record = await realtimeStoreExpand(
-				collection,
-				subscription.record,
-				queryParams?.expand
-			);
-			return list.map((item) => (item.id === subscription.record.id ? subscription.record : item));
 		case 'create':
-			subscription.record = await realtimeStoreExpand(
-				collection,
-				subscription.record,
-				queryParams?.expand
-			);
-			return [...list, subscription.record];
+			data = produce(data, (draft) => {
+				let updateIndex = draft.findIndex((item) => item.id === expandedRecord.id);
+				if (updateIndex !== -1) {
+					if (new Date(expandedRecord.updated) > new Date(draft[updateIndex].updated)) {
+						draft[updateIndex] = expandedRecord as Draft<T>;
+					} else {
+						actionIgnored = true;
+					}
+				} else {
+					draft.push(expandedRecord as Draft<T>);
+				}
+			});
+			break;
 		case 'delete':
-			return list.filter((item) => item.id !== subscription.record.id);
-		default:
-			return list;
+			data = produce(data, (draft) => {
+				let deleteIndex = draft.findIndex((item) => item.id === expandedRecord.id);
+				if (deleteIndex !== -1) {
+					if (new Date(expandedRecord.updated) > new Date(draft[deleteIndex].updated)) {
+						draft.splice(deleteIndex, 1);
+					} else {
+						actionIgnored = true;
+					}
+				}
+			});
+			break;
+	}
+
+	if (!actionIgnored) {
+		if (subscription.action !== 'delete') {
+			if (filterFunction) {
+				data = produce(
+					data,
+					(draft) => (draft as T[]).filter(filterFunction, filterFunctionThisArg) as Draft<T>[]
+				);
+			}
+			if (sortFunction) {
+				data.sort(sortFunction);
+			}
+		}
+
+		queryClient.setQueryData<T[]>(queryKey, data);
 	}
 };
 
-export const createCollectionQueryInitialData = <T extends Pick<Record, 'id'> = Pick<Record, 'id'>>(
+export const createCollectionQueryInitialData = async <
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
+>(
 	collection: ReturnType<Client['collection']>,
 	{ queryParams = undefined }: { queryParams?: RecordListQueryParams }
-): Promise<Array<T>> => collection.getFullList<T>(undefined, queryParams);
+): Promise<Array<T>> => [...(await collection.getFullList<T>(undefined, queryParams))];
 
 export const createCollectionQueryPrefetch = <
-	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -72,25 +124,8 @@ export const createCollectionQueryPrefetch = <
 	queryFn: async () => await createCollectionQueryInitialData<T>(collection, { queryParams })
 });
 
-/**
- * Readable async Svelte store wrapper around an entire Pocketbase collection that updates in realtime.
- *
- * Notes:
- * - When running server-side, this store returns the "empty version" version of this store, i.e. an empty array.
- * - Create action received by the realtime subscription are added to the end of the returned store.
- * - When an action is received via the realtime subscription, `sortFunction` runs first, then `filterFunction` runs.
- * - This version of the collection store does not have pagination. Use `paginatedCollectionStore` if you want pagination.
- *
- * @param collection Collection whose updates to fetch in realtime.
- * @param [options.queryParams] Pocketbase query parameters to apply on inital data fetch. **Only `expand` field is used when an action is received via the realtime subscription. Use `sortFunction` and `filterFunction` to apply sorting and filtering on actions received via the realtime subscription.**
- * @param [options.sortFunction] `compareFn` from `Array.prototype.sort` that runs when an action is received via the realtime subscription. This is used since realtime subscriptions does not support `sort` in `queryParams`.
- * @param [options.filterFunction] `predicate` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since realtime subscriptions does not support `filter` in `queryParams`.
- * @param [options.filterFunctionThisArg] `thisArg` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since realtime subscriptions does not support `filter` in `queryParams`.
- * @param [options.initial] If provided, skips initial data fetching and uses the provided value instead. Useful if you want to perform initial fetch during SSR and initialize a realtime subscription client-side.
- * @param [options.disableRealtime] Only performs the initial fetch and does not subscribe to anything. This has an effect only when provided client-side.
- */
 export const createCollectionQuery = <
-	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -125,23 +160,20 @@ export const createCollectionQuery = <
 			: collection
 					.subscribe<T>('*', (data) => {
 						collectionStoreCallback(
-							queryClient.getQueryData<T[]>(queryKey) ?? [],
+							queryClient,
+							queryKey,
 							data,
 							collection,
-							queryParams
+							queryParams,
+							options.sortFunction,
+							options.filterFunction,
+							options.filterFunctionThisArg
 						)
-							.then((r) => {
+							.then(() => {
 								console.log(
 									`(C) ${JSON.stringify(queryKey)}: updating with realtime action:`,
 									data.action,
 									data.record.id
-								);
-								queryClient.setQueryData<T[]>(queryKey, () =>
-									options.filterFunction
-										? r
-												.sort(options.sortFunction)
-												.filter(options.filterFunction, options.filterFunctionThisArg)
-										: r.sort(options.sortFunction)
 								);
 							})
 							.catch((e) => {

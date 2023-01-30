@@ -12,117 +12,220 @@ import {
 	type FetchQueryOptions,
 	type QueryKey,
 	type InfiniteData,
-	type CreateInfiniteQueryResult
+	type CreateInfiniteQueryResult,
+	type QueryClient
 } from '@tanstack/svelte-query';
 
-import { chunk, uniqBy } from 'lodash';
+import { setAutoFreeze, produce, type Draft } from 'immer';
 
 import { realtimeStoreExpand } from '../internal';
 import { collectionKeys } from '../query-key-factory';
 import type { InfiniteCollectionStoreOptions, InfiniteQueryPrefetchOptions } from '../types';
 
-const infiniteCollectionStoreCallback = async <T extends Pick<Record, 'id'>>(
-	data: InfiniteData<ListResult<T>>,
+setAutoFreeze(false);
+
+const infiniteCollectionStoreCallback = async <
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
+	TQueryKey extends QueryKey = QueryKey
+>(
+	queryClient: QueryClient,
+	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
 	collection: ReturnType<Client['collection']>,
 	perPage: number,
 	queryParams: RecordListQueryParams | undefined = undefined,
 	sortFunction?: (a: T, b: T) => number,
 	filterFunction?: (value: T, index: number, array: T[]) => boolean,
-	filterFunctionThisArg?: any,
-	ignoreUnknownRecords = true
-): Promise<{ data: InfiniteData<ListResult<T>>; invalidatePages: Set<number> }> => {
-	let allPages = uniqBy(
-		data.pages.flatMap((page) => page.items),
-		'id'
-	);
+	filterFunctionThisArg?: any
+) => {
+	let data = queryClient.getQueryData<InfiniteData<ListResult<T>>>(queryKey);
+	if (data) {
+		let expandedRecord = subscription.record;
+		if (
+			(subscription.action === 'update' || subscription.action === 'create') &&
+			queryParams?.expand
+		) {
+			expandedRecord = await realtimeStoreExpand(
+				collection,
+				subscription.record,
+				queryParams.expand
+			);
+			// get data again because the cache could've changed while we were awaiting the expand
+			data = queryClient.getQueryData<InfiniteData<ListResult<T>>>(queryKey);
+		}
 
-	const lastDataPage = data.pages.slice(-1).at(0);
+		if (data) {
+			let allItems = data.pages.flatMap((page) => page.items);
 
-	let totalItems = lastDataPage?.totalItems ?? 0;
-
-	switch (subscription.action) {
-		case 'update':
-			let updateIndex = allPages.findIndex((item) => item.id === subscription.record.id);
-			subscription.record =
-				updateIndex === -1 && !ignoreUnknownRecords
-					? await realtimeStoreExpand(collection, subscription.record, queryParams?.expand)
-					: subscription.record;
-			if (updateIndex === -1 && !ignoreUnknownRecords) {
-				allPages.push(subscription.record);
-			} else {
-				allPages[updateIndex] = subscription.record;
+			let actionIgnored = false;
+			let updateIndex = -1;
+			let deleteIndex = -1;
+			switch (subscription.action) {
+				case 'update':
+				case 'create':
+					allItems = produce(allItems, (draft) => {
+						updateIndex = draft.findIndex((item) => item.id === expandedRecord.id);
+						if (updateIndex !== -1) {
+							if (new Date(expandedRecord.updated) > new Date(draft[updateIndex].updated)) {
+								draft[updateIndex] = expandedRecord as Draft<T>;
+							} else {
+								actionIgnored = true;
+							}
+						} else {
+							draft.push(expandedRecord as Draft<T>);
+						}
+					});
+					break;
+				case 'delete':
+					allItems = produce(allItems, (draft) => {
+						deleteIndex = draft.findIndex((item) => item.id === expandedRecord.id);
+						if (new Date(expandedRecord.updated) > new Date(draft[deleteIndex].updated)) {
+							draft.splice(deleteIndex, 1);
+						} else {
+							actionIgnored = true;
+						}
+					});
+					break;
 			}
-			break;
-		case 'create':
-			let createIndex = allPages.findIndex((item) => item.id === subscription.record.id);
-			subscription.record =
-				createIndex === -1 && !ignoreUnknownRecords
-					? await realtimeStoreExpand(collection, subscription.record, queryParams?.expand)
-					: subscription.record;
-			if (createIndex === -1 && !ignoreUnknownRecords) {
-				allPages.push(subscription.record);
-				totalItems += 1;
-			} else {
-				allPages[createIndex] = subscription.record;
+
+			if (!actionIgnored) {
+				let itemUnawareDelete = false;
+				let reduceTotalItemsBy = 0;
+				if (updateIndex === -1 && subscription.action === 'create') {
+					reduceTotalItemsBy = -1;
+				} else if (
+					deleteIndex !== -1 ||
+					(subscription.action === 'delete' && filterFunction
+						? [expandedRecord].filter(filterFunction, filterFunctionThisArg).length === 0
+						: true)
+				) {
+					reduceTotalItemsBy = 1;
+					if (deleteIndex === -1) {
+						itemUnawareDelete = true;
+					}
+				}
+
+				if (filterFunction) {
+					const allItemsCountBeforeFilter = allItems.length;
+					allItems = produce(
+						allItems,
+						(draft) => (draft as T[]).filter(filterFunction, filterFunctionThisArg) as Draft<T>[]
+					);
+					const allItemsCountAfterFilter = allItems.length;
+					if (allItemsCountAfterFilter < allItemsCountBeforeFilter) {
+						reduceTotalItemsBy -= allItemsCountBeforeFilter - allItemsCountAfterFilter;
+					}
+				}
+
+				let positionBeforeSort = -1;
+				let positionAfterSort = -1;
+				if (sortFunction && subscription.action !== 'delete') {
+					positionBeforeSort = allItems.findIndex((item) => item.id === expandedRecord.id);
+					allItems.sort(sortFunction);
+					positionAfterSort = allItems.findIndex((item) => item.id === expandedRecord.id);
+				}
+
+				let totalItemsWeHave = 0;
+				let totalItemsInDatabase = 0;
+				data = produce(data, (draft) => {
+					for (let index = 0; index < draft.pages.length; index++) {
+						draft.pages[index].totalItems -= reduceTotalItemsBy;
+						draft.pages[index].totalPages = Math.ceil(
+							draft.pages[index].totalItems / draft.pages[index].perPage
+						);
+						draft.pages[index].items = allItems.splice(0, draft.pages[index].perPage) as Draft<T[]>;
+						if (draft.pages[index].totalItems === 0) {
+							draft.pages[index].totalPages = 0;
+						} else if (draft.pages[index].totalItems === 1) {
+							draft.pages[index].totalPages = 1;
+						}
+						totalItemsWeHave += draft.pages[index].items.length;
+						totalItemsInDatabase = Math.max(totalItemsInDatabase, draft.pages[index].totalItems);
+					}
+				});
+
+				const pagesLeftInAllItems = Math.ceil(allItems.length / perPage);
+				if (allItems.length > 0 && totalItemsWeHave === totalItemsInDatabase) {
+					// add pages only if we have all items in the database
+					data = produce(data, (draft) => {
+						for (let index = 0; index < pagesLeftInAllItems; index++) {
+							draft.pages.push(
+								new ListResult(
+									draft.pages[draft.pages.length - 1].page + 1,
+									perPage,
+									draft.pages[draft.pages.length - 1].totalItems,
+									draft.pages[draft.pages.length - 1].totalPages,
+									allItems.splice(0, perPage)
+								) as Draft<ListResult<T>>
+							);
+							draft.pageParams.push(draft.pages[draft.pages.length - 1].page + 1);
+						}
+					});
+				}
+
+				if (
+					totalItemsWeHave === totalItemsInDatabase &&
+					data.pages[data.pages.length - 1].items.length === 0
+				) {
+					// delete empty pages only if we have all items in the database
+					data = produce(data, (draft) => {
+						draft.pages.pop();
+						draft.pageParams.pop();
+					});
+				}
+
+				queryClient.setQueryData<InfiniteData<ListResult<T>>>(queryKey, () => data);
+
+				if (deleteIndex !== -1 && totalItemsWeHave !== totalItemsInDatabase) {
+					// something cache was aware of was deleted and we don't have all items in the database, so invalidate last page
+					const pageNumToInvalidate = data.pages[data.pages.length - 1].page;
+					queryClient.invalidateQueries<ListResult<T>>({
+						queryKey,
+						refetchPage: (lastPage, index, allPages) =>
+							allPages[index].page === pageNumToInvalidate,
+						exact: true
+					});
+				} else if (
+					itemUnawareDelete &&
+					totalItemsWeHave !== totalItemsInDatabase &&
+					(data.pages[0].page !== 1 ||
+						data.pages[data.pages.length - 1].page !== data.pages[data.pages.length - 1].totalPages)
+				) {
+					// an item we were unaware of but affects this query was deleted, we don't have all items in database, and we don't have the first page or last page, so invalidate all pages since item we were unaware of that was deleted could change what items are in our pages
+					queryClient.invalidateQueries<ListResult<T>>({
+						queryKey,
+						exact: true
+					});
+				} else if (
+					positionBeforeSort !== -1 &&
+					positionAfterSort !== -1 &&
+					totalItemsWeHave !== totalItemsInDatabase
+				) {
+					// something was updated/created and we don't have all items in the database
+					if (
+						positionAfterSort === allItems.length &&
+						data.pages[data.pages.length - 1].page !== data.pages[data.pages.length - 1].totalPages
+					) {
+						// after sorting, item ended up as the last item and we don't have the last page, so invalidate all pages
+						queryClient.invalidateQueries<ListResult<T>>({
+							queryKey,
+							exact: true
+						});
+					} else if (positionAfterSort === 0 && data.pages[0].page !== 1) {
+						// after sorting, item ended up as the first item and we don't have the first page, so invalidate all pages
+						queryClient.invalidateQueries<ListResult<T>>({
+							queryKey,
+							exact: true
+						});
+					}
+				}
 			}
-			break;
-		case 'delete':
-			allPages = allPages.filter((item) => item.id !== subscription.record.id);
-			totalItems -= 1;
-			break;
-	}
-
-	allPages = allPages.sort(sortFunction);
-	if (filterFunction) {
-		let allPagesCountBeforeFilter = allPages.length;
-		allPages = allPages.filter(filterFunction, filterFunctionThisArg);
-		let allPagesCountAfterFilter = allPages.length;
-		if (allPagesCountAfterFilter < allPagesCountBeforeFilter) {
-			totalItems -= 1;
 		}
 	}
-
-	const chunks = chunk(allPages, perPage);
-	let totalPages = Math.ceil(totalItems / perPage);
-
-	let invalidatePages = new Set<number>();
-	let lastDataPageNum = lastDataPage?.page ?? 0;
-	while (chunks.length > data.pages.length) {
-		lastDataPageNum++;
-		data.pages.push(new ListResult(lastDataPageNum, perPage, totalItems, totalPages, []));
-		data.pageParams.push(lastDataPageNum);
-	}
-
-	let dataPageIndex = 0;
-	for (const chunk of chunks) {
-		data.pages[dataPageIndex].totalItems = totalItems;
-		data.pages[dataPageIndex].totalPages = totalPages;
-		data.pages[dataPageIndex].items = chunk;
-		if (chunk.length < perPage && totalItems > (dataPageIndex + 1) * perPage + chunk.length) {
-			invalidatePages.add(data.pages[dataPageIndex].page);
-		}
-		dataPageIndex++;
-	}
-
-	for (let index = dataPageIndex; index < data.pages.length; index++) {
-		if (totalItems > (dataPageIndex + 1) * perPage) {
-			data.pages[dataPageIndex].totalItems = totalItems;
-			data.pages[dataPageIndex].totalPages = totalPages;
-			data.pages[dataPageIndex].items = [];
-			invalidatePages.add(data.pages[dataPageIndex].page);
-		} else {
-			data.pages.length = dataPageIndex + 1;
-			data.pageParams.length = dataPageIndex + 1;
-			break;
-		}
-	}
-
-	return { data, invalidatePages };
 };
 
-export const infiniteCollectionQueryInitialData = <
-	T extends Pick<Record, 'id'> = Pick<Record, 'id'>
+export const infiniteCollectionQueryInitialData = async <
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
 >(
 	collection: ReturnType<Client['collection']>,
 	{
@@ -130,10 +233,10 @@ export const infiniteCollectionQueryInitialData = <
 		perPage = 20,
 		queryParams = undefined
 	}: { page?: number; perPage?: number; queryParams?: RecordListQueryParams } = {}
-): Promise<ListResult<T>> => collection.getList<T>(page, perPage, queryParams);
+): Promise<ListResult<T>> => ({ ...(await collection.getList<T>(page, perPage, queryParams)) });
 
 export const infiniteCollectionQueryPrefetch = <
-	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -159,7 +262,7 @@ export const infiniteCollectionQueryPrefetch = <
 });
 
 export const createInfiniteCollectionQuery = <
-	T extends Pick<Record, 'id'> = Pick<Record, 'id'>,
+	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
 	collection: ReturnType<Client['collection']>,
@@ -179,7 +282,6 @@ export const createInfiniteCollectionQuery = <
 		disableRealtime = false,
 		invalidateQueryOnRealtimeError = true,
 		keepCurrentPageOnly = false,
-		ignoreUnknownRecords = true,
 		...options
 	}: InfiniteCollectionStoreOptions<
 		ListResult<T>,
@@ -209,8 +311,10 @@ export const createInfiniteCollectionQuery = <
 			if (keepCurrentPageOnly) {
 				queryClient.setQueryData<InfiniteData<ListResult<T>>>(queryKey, (old) => {
 					if (old) {
-						old.pages = [];
-						old.pageParams = [];
+						return produce(old, (draft) => {
+							draft.pages = [];
+							draft.pageParams = [];
+						});
 					}
 					return old;
 				});
@@ -219,10 +323,11 @@ export const createInfiniteCollectionQuery = <
 				latestTotalPages = data.totalPages;
 				queryClient.setQueryData<InfiniteData<ListResult<T>>>(queryKey, (old) => {
 					if (old) {
-						old.pages = old.pages.map((page) => {
-							page.totalItems = latestTotalItems;
-							page.totalPages = latestTotalPages;
-							return page;
+						return produce(old, (draft) => {
+							for (let index = 0; index < draft.pages.length; index++) {
+								draft.pages[index].totalItems = latestTotalItems;
+								draft.pages[index].totalPages = latestTotalPages;
+							}
 						});
 					}
 					return old;
@@ -242,32 +347,22 @@ export const createInfiniteCollectionQuery = <
 			: collection
 					.subscribe<T>('*', (data) => {
 						infiniteCollectionStoreCallback(
-							queryClient.getQueryData<InfiniteData<ListResult<T>>>(queryKey) ?? {
-								pages: [],
-								pageParams: []
-							},
+							queryClient,
+							queryKey,
 							data,
 							collection,
 							perPage,
 							queryParams,
 							options.sortFunction,
 							options.filterFunction,
-							options.filterFunctionThisArg,
-							ignoreUnknownRecords
+							options.filterFunctionThisArg
 						)
-							.then((r) => {
+							.then(() => {
 								console.log(
 									`(IC) ${JSON.stringify(queryKey)}: updating with realtime action:`,
 									data.action,
 									data.record.id
 								);
-								queryClient.setQueryData<InfiniteData<ListResult<T>>>(queryKey, () => r.data);
-								queryClient.invalidateQueries<ListResult<T>>({
-									queryKey,
-									refetchPage: (lastPage, index, allPages) =>
-										r.invalidatePages.has(allPages[index].page),
-									exact: true
-								});
 							})
 							.catch((e) => {
 								console.log(

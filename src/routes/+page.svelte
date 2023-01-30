@@ -6,8 +6,12 @@
 
 	const pocketbase = new Pocketbase('https://voel.local');
 
-	const query = createCollectionQuery(pocketbase.collection('test'), {
-		queryParams: { filter: '' }
+	const query = createInfiniteCollectionQuery(pocketbase.collection('test'), {
+		page: 2,
+		perPage: 1,
+		queryParams: { sort: '+name' },
+		sortFunction: (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+		// filterFunction: (item) => item.name.includes('bunbee')
 	});
 
 	// onMount(() => {
@@ -30,7 +34,7 @@
 {#if $query.isSuccess}
 	<div>
 		<pre>
-			{JSON.stringify($query, null, 2)}
+			{JSON.stringify($query.data.pages, null, 2)}
 		</pre>
 	</div>
 	<div>
