@@ -1,7 +1,7 @@
 {
 	"name": "svelte-query-pocketbase",
 	"description": "TanStack Query Svelte store wrappers around Pocketbase Realtime",
-	"version": "0.0.1-beta.7",
+	"version": "0.0.1-beta.8",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",

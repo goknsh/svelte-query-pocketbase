@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.8
+
+### Patch Changes
+
+- [`7e7def0`](https://github.com/goknsh/svelte-query-pocketbase/commit/7e7def0c8caa35ff06b04918fb30c92e20a77ebd) Thanks [@goknsh](https://github.com/goknsh)! - refactor: all queries are simplified, now update cache immutably, and infinite queries should work correctly now
+
 ## 0.0.1-beta.7
 
 ### Patch Changes
