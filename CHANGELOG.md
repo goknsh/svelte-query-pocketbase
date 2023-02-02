@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.9
+
+### Patch Changes
+
+- [`40e97e3`](https://github.com/goknsh/svelte-query-pocketbase/commit/40e97e339a1f7081f319f846eb2c300227ed52dd) Thanks [@goknsh](https://github.com/goknsh)! - fix: collection deletes are now processed correctly
+
 ## 0.0.1-beta.8
 
 ### Patch Changes
