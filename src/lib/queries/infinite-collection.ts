@@ -66,7 +66,7 @@ const infiniteCollectionStoreCallback = async <
 					allItems = produce(allItems, (draft) => {
 						updateIndex = draft.findIndex((item) => item.id === expandedRecord.id);
 						if (updateIndex !== -1) {
-							if (new Date(expandedRecord.updated) > new Date(draft[updateIndex].updated)) {
+							if (new Date(expandedRecord.updated) >= new Date(draft[updateIndex].updated)) {
 								draft[updateIndex] = expandedRecord as Draft<T>;
 							} else {
 								actionIgnored = true;
@@ -79,7 +79,7 @@ const infiniteCollectionStoreCallback = async <
 				case 'delete':
 					allItems = produce(allItems, (draft) => {
 						deleteIndex = draft.findIndex((item) => item.id === expandedRecord.id);
-						if (new Date(expandedRecord.updated) > new Date(draft[deleteIndex].updated)) {
+						if (new Date(expandedRecord.updated) >= new Date(draft[deleteIndex].updated)) {
 							draft.splice(deleteIndex, 1);
 						} else {
 							actionIgnored = true;
@@ -165,9 +165,10 @@ const infiniteCollectionStoreCallback = async <
 
 				if (
 					totalItemsWeHave === totalItemsInDatabase &&
+					data.pages.length > 1 &&
 					data.pages[data.pages.length - 1].items.length === 0
 				) {
-					// delete empty pages only if we have all items in the database
+					// delete empty pages only if we have all items in the database, and there is at least one page
 					data = produce(data, (draft) => {
 						draft.pages.pop();
 						draft.pageParams.pop();

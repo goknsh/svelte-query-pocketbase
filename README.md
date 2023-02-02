@@ -1,6 +1,6 @@
 # svelte-query-pocketbase
 
-TanStack Query Svelte store wrappers around Pocketbase Realtime.
+TanStack Query wrappers around Pocketbase Realtime for Svelte
 
 ## Installation
 

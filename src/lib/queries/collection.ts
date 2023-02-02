@@ -55,7 +55,7 @@ const collectionStoreCallback = async <
 			data = produce(data, (draft) => {
 				let updateIndex = draft.findIndex((item) => item.id === expandedRecord.id);
 				if (updateIndex !== -1) {
-					if (new Date(expandedRecord.updated) > new Date(draft[updateIndex].updated)) {
+					if (new Date(expandedRecord.updated) >= new Date(draft[updateIndex].updated)) {
 						draft[updateIndex] = expandedRecord as Draft<T>;
 					} else {
 						actionIgnored = true;
@@ -69,7 +69,7 @@ const collectionStoreCallback = async <
 			data = produce(data, (draft) => {
 				let deleteIndex = draft.findIndex((item) => item.id === expandedRecord.id);
 				if (deleteIndex !== -1) {
-					if (new Date(expandedRecord.updated) > new Date(draft[deleteIndex].updated)) {
+					if (new Date(expandedRecord.updated) >= new Date(draft[deleteIndex].updated)) {
 						draft.splice(deleteIndex, 1);
 					} else {
 						actionIgnored = true;
