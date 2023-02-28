@@ -1,5 +1,13 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.10
+
+### Patch Changes
+
+- [`438a755`](https://github.com/goknsh/svelte-query-pocketbase/commit/438a75513e0ae845884fa79abc5605e44f06b167) Thanks [@goknsh](https://github.com/goknsh)! - chore: make README.md prettier
+
+- [`379b302`](https://github.com/goknsh/svelte-query-pocketbase/commit/379b3020539999b51aea2b7715cdd876b9b131ac) Thanks [@goknsh](https://github.com/goknsh)! - chore: prepare for first release
+
 ## 0.0.1-beta.9
 
 ### Patch Changes
