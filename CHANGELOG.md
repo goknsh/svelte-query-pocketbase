@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.12
+
+### Patch Changes
+
+- [`e00c1f9`](https://github.com/goknsh/svelte-query-pocketbase/commit/e00c1f98c32aab9abf4ac5daf39bf57988e25491) Thanks [@goknsh](https://github.com/goknsh)! - chore: allow pocketbase ^0.11.1 || ^0.12.0
+
 ## 0.0.1-beta.11
 
 ### Patch Changes
