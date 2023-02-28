@@ -14,6 +14,9 @@ Creates a TanStack Query that updates a Pocketbase record in realtime. View the 
 
 ### Simple Example
 
+<details>
+	<summary>View Code</summary>
+
 ```svelte
 <script lang="ts">
 	import Pocketbase from 'pocketbase';
@@ -47,7 +50,12 @@ Creates a TanStack Query that updates a Pocketbase record in realtime. View the 
 {/if}
 ```
 
+</details>
+
 ### With Query Params
+
+<details>
+	<summary>View Code</summary>
 
 ```svelte
 <script lang="ts">
@@ -83,11 +91,16 @@ Creates a TanStack Query that updates a Pocketbase record in realtime. View the 
 {/if}
 ```
 
+</details>
+
 ### Using SSR
 
 Read [TanStack Query's docs on this](https://tanstack.com/query/v4/docs/svelte/ssr) first. The examples below are modified versions of the examples on that page.
 
 #### Using `initialData`
+
+<details>
+	<summary>View Code</summary>
 
 **src/routes/+page.ts**
 
@@ -138,7 +151,12 @@ export const load: PageLoad = async () => {
 </script>
 ```
 
+</details>
+
 #### Using `prefetchQuery`
+
+<details>
+	<summary>View Code</summary>
 
 **src/routes/+layout.ts**
 
@@ -201,11 +219,16 @@ export const load: PageLoad = async ({ parent }) => {
 </script>
 ```
 
+</details>
+
 ## Collection Query
 
 Creates a TanStack Query that updates an array of Pocketbase records in realtime. View the JSDoc for the relevant functions for more documentation on their available options.
 
 ### Simple Example
+
+<details>
+	<summary>View Code</summary>
 
 ```svelte
 <script lang="ts">
@@ -239,7 +262,12 @@ Creates a TanStack Query that updates an array of Pocketbase records in realtime
 {/if}
 ```
 
+</details>
+
 ### With Query Params
+
+<details>
+	<summary>View Code</summary>
 
 ```svelte
 <script lang="ts">
@@ -261,9 +289,9 @@ Creates a TanStack Query that updates an array of Pocketbase records in realtime
 				sort: '-created', // sort by date created, descending
 				filter: 'created >= "2022-01-01 00:00:00"'
 			},
-      // sortFunction and filterFunction are applied after a realtime update is applied
+			// sortFunction and filterFunction are applied after a realtime update is applied
 			sortFunction: (a, b) => new Date(a.created) - new Date(b.created) // sort by date created, descending
-      filterFunction: (record) => new Date(record.created) >= new Date("2022-01-01 00:00:00")
+			filterFunction: (record) => new Date(record.created) >= new Date("2022-01-01 00:00:00")
 		}
 	);
 </script>
@@ -286,11 +314,16 @@ Creates a TanStack Query that updates an array of Pocketbase records in realtime
 {/if}
 ```
 
+</details>
+
 ### Using SSR
 
 Read [TanStack Query's docs on this](https://tanstack.com/query/v4/docs/svelte/ssr) first. The examples below are modified versions of the examples on that page.
 
 #### Using `initialData`
+
+<details>
+	<summary>View Code</summary>
 
 **src/routes/+page.ts**
 
@@ -339,7 +372,12 @@ export const load: PageLoad = async () => {
 </script>
 ```
 
+</details>
+
 #### Using `prefetchQuery`
+
+<details>
+	<summary>View Code</summary>
 
 **src/routes/+layout.ts**
 
@@ -400,11 +438,16 @@ export const load: PageLoad = async ({ parent }) => {
 </script>
 ```
 
+</details>
+
 ## Infinite Collection Query
 
 Creates a TanStack Infinite Query that updates paginated Pocketbase records in realtime. View the JSDoc for the relevant functions for more documentation on their available options.
 
 ### Simple Example
+
+<details>
+	<summary>View Code</summary>
 
 ```svelte
 <script lang="ts">
@@ -447,7 +490,12 @@ Creates a TanStack Infinite Query that updates paginated Pocketbase records in r
 {/if}
 ```
 
+</details>
+
 ### With Query Params
+
+<details>
+	<summary>View Code</summary>
 
 ```svelte
 <script lang="ts">
@@ -469,9 +517,9 @@ Creates a TanStack Infinite Query that updates paginated Pocketbase records in r
 				sort: '-created', // sort by date created, descending
 				filter: 'created >= "2022-01-01 00:00:00"'
 			},
-      // sortFunction and filterFunction are applied after a realtime update is applied
+			// sortFunction and filterFunction are applied after a realtime update is applied
 			sortFunction: (a, b) => new Date(a.created) - new Date(b.created) // sort by date created, descending
-      filterFunction: (record) => new Date(record.created) >= new Date("2022-01-01 00:00:00")
+			filterFunction: (record) => new Date(record.created) >= new Date("2022-01-01 00:00:00")
 		}
 	);
 </script>
@@ -503,11 +551,16 @@ Creates a TanStack Infinite Query that updates paginated Pocketbase records in r
 {/if}
 ```
 
+</details>
+
 ### Using SSR
 
 Read [TanStack Query's docs on this](https://tanstack.com/query/v4/docs/svelte/ssr) first. The examples below are modified versions of the examples on that page.
 
 #### Using `initialData`
+
+<details>
+	<summary>View Code</summary>
 
 **src/routes/+page.ts**
 
@@ -557,7 +610,12 @@ export const load: PageLoad = async () => {
 </script>
 ```
 
+</details>
+
 #### Using `prefetchQuery`
+
+<details>
+	<summary>View Code</summary>
 
 **src/routes/+layout.ts**
 
@@ -618,11 +676,16 @@ export const load: PageLoad = async ({ parent }) => {
 </script>
 ```
 
+</details>
+
 ## User Store
 
 Svelte store wrapper around the authenticated Pocketbase user that updates in realtime.
 
 ### Using Default Auth Store
+
+<details>
+	<summary>View Code</summary>
 
 ```svelte
 <script lang="ts">
@@ -653,11 +716,16 @@ Svelte store wrapper around the authenticated Pocketbase user that updates in re
 	<p>Welcome, {$user.name}:</p>
 	<pre>{JSON.stringify($user, null, 2)}</pre>
 {:else}
-	You are not logged in.
+	<p>You are not logged in.</p>
 {/if}
 ```
 
+</details>
+
 ### Using Local Auth Store
+
+<details>
+	<summary>View Code</summary>
 
 ```svelte
 <script lang="ts">
@@ -688,6 +756,8 @@ Svelte store wrapper around the authenticated Pocketbase user that updates in re
 	<p>Welcome, {$user.name}:</p>
 	<pre>{JSON.stringify($user, null, 2)}</pre>
 {:else}
-	You are not logged in.
+	<p>You are not logged in.</p>
 {/if}
 ```
+
+</details>

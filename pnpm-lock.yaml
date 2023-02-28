@@ -17,7 +17,7 @@ specifiers:
   eslint-config-prettier: 8.6.0
   eslint-plugin-svelte3: 4.0.0
   husky: 8.0.3
-  immer: 9.0.19
+  immer: ^9.0.19
   lodash: 4.17.21
   pocketbase: ^0.10.0
   postcss: 8.4.21
@@ -34,6 +34,7 @@ specifiers:
 
 dependencies:
   '@tanstack/svelte-query': 4.22.4_svelte@3.55.1
+  immer: 9.0.19
   pocketbase: 0.10.1
   svelte: 3.55.1
 
@@ -53,7 +54,6 @@ devDependencies:
   eslint-config-prettier: 8.6.0_eslint@8.32.0
   eslint-plugin-svelte3: 4.0.0_tmo5zkisvhu6htudosk5k7m6pu
   husky: 8.0.3
-  immer: 9.0.19
   lodash: 4.17.21
   postcss: 8.4.21
   prettier: 2.8.3
@@ -2824,7 +2824,7 @@ packages:
 
   /immer/9.0.19:
     resolution: {integrity: sha512-eY+Y0qcsB4TZKwgQzLaE/lqYMlKhv5J9dyd2RhhtGhNo2njPXDqU9XPfcNfa3MIDsdtZt5KlkIsirlo4dHsWdQ==}
-    dev: true
+    dev: false
 
   /import-fresh/3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
