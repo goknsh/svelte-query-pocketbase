@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 0.0.1-beta.11
+
+### Patch Changes
+
+- [`5c4e065`](https://github.com/goknsh/svelte-query-pocketbase/commit/5c4e06557f387949d6728d3c8d63912e25af41b5) Thanks [@goknsh](https://github.com/goknsh)! - chore: update pocketbase to ^0.11.1, use getFullList w/o batchSize, RecordService type, and sort imports
+
 ## 0.0.1-beta.10
 
 ### Patch Changes
