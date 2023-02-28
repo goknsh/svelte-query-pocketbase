@@ -1,5 +1,4 @@
-import type { RecordListQueryParams } from 'pocketbase';
-import type Client from 'pocketbase';
+import type { RecordListQueryParams, RecordService } from 'pocketbase';
 
 /**
  * A collection key factory to generate query keys for TanStack Query based on the parameters given to a Pocketbase `get[...]` function.
@@ -14,7 +13,7 @@ export const collectionKeys = ({
 	id = '*',
 	...queryParams
 }: {
-	collection: ReturnType<Client['collection']>;
+	collection: RecordService;
 	id?: string;
 } & RecordListQueryParams) => {
 	return [

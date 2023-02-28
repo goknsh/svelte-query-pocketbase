@@ -1,25 +1,25 @@
 import {
 	createQuery,
-	type QueryClient,
 	useQueryClient,
 	type CreateQueryResult,
 	type FetchQueryOptions,
+	type QueryClient,
 	type QueryKey
 } from '@tanstack/svelte-query';
 
-import { setAutoFreeze, produce, type Draft } from 'immer';
+import { produce, setAutoFreeze, type Draft } from 'immer';
 
-import type Client from 'pocketbase';
 import type {
+	ClientResponseError,
 	Record,
 	RecordListQueryParams,
-	RecordSubscription,
-	ClientResponseError
+	RecordService,
+	RecordSubscription
 } from 'pocketbase';
 
-import { collectionKeys } from '../query-key-factory';
 import { realtimeStoreExpand } from '../internal';
-import type { CollectionStoreOptions, CollectionQueryPrefetchOptions } from '../types';
+import { collectionKeys } from '../query-key-factory';
+import type { CollectionQueryPrefetchOptions, CollectionStoreOptions } from '../types';
 
 setAutoFreeze(false);
 
@@ -30,7 +30,7 @@ const collectionStoreCallback = async <
 	queryClient: QueryClient,
 	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	queryParams: RecordListQueryParams | undefined = undefined,
 	sortFunction?: (a: T, b: T) => number,
 	filterFunction?: (value: T, index: number, array: T[]) => boolean,
@@ -106,9 +106,9 @@ const collectionStoreCallback = async <
 export const createCollectionQueryInitialData = async <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	{ queryParams = undefined }: { queryParams?: RecordListQueryParams }
-): Promise<Array<T>> => [...(await collection.getFullList<T>(undefined, queryParams))];
+): Promise<Array<T>> => [...(await collection.getFullList<T>(queryParams))];
 
 /**
  * Meant for SSR use, allows for prefetching queries on the server so that data is already available in the cache, and no initial fetch occurs client-side. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-prefetchquery) and this project's README.md for some examples.
@@ -124,7 +124,7 @@ export const createCollectionQueryPrefetch = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	{
 		staleTime = Infinity,
 		queryParams = undefined,
@@ -168,7 +168,7 @@ export const createCollectionQuery = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	{
 		staleTime = Infinity,
 		refetchOnReconnect = 'always',

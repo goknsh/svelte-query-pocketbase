@@ -1,22 +1,22 @@
 import {
 	createQuery,
-	type QueryClient,
 	useQueryClient,
 	type CreateQueryResult,
 	type FetchQueryOptions,
+	type QueryClient,
 	type QueryKey
 } from '@tanstack/svelte-query';
 
-import type Client from 'pocketbase';
 import type {
 	ClientResponseError,
 	Record,
 	RecordQueryParams,
+	RecordService,
 	RecordSubscription
 } from 'pocketbase';
 
-import { collectionKeys } from '../query-key-factory';
 import { realtimeStoreExpand } from '../internal';
+import { collectionKeys } from '../query-key-factory';
 import type { QueryPrefetchOptions, RecordStoreOptions } from '../types';
 
 const createRecordQueryCallback = async <
@@ -26,7 +26,7 @@ const createRecordQueryCallback = async <
 	queryClient: QueryClient,
 	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	queryParams: RecordQueryParams | undefined = undefined
 ) => {
 	let data = queryClient.getQueryData<T | null>(queryKey);
@@ -69,7 +69,7 @@ const createRecordQueryCallback = async <
 export const createRecordQueryInitialData = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	id: string,
 	{ queryParams = undefined }: { queryParams?: RecordQueryParams }
 ): Promise<T> => collection.getOne<T>(id, queryParams);
@@ -89,7 +89,7 @@ export const createRecordQueryPrefetch = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	id: string,
 	{
 		staleTime = Infinity,
@@ -132,7 +132,7 @@ export const createRecordQuery = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	id: string,
 	{
 		staleTime = Infinity,

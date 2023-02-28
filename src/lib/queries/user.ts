@@ -2,7 +2,7 @@ import type Client from 'pocketbase';
 import type { BaseAuthStore, Record } from 'pocketbase';
 import { readable, type Readable } from 'svelte/store';
 
-import { type KnownUser, type UnknownUser, isRecord } from '../types';
+import { isRecord, type KnownUser, type UnknownUser } from '../types';
 
 /**
  * Svelte store wrapper around the authenticated Pocketbase user that updates in realtime.

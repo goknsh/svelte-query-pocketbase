@@ -1,22 +1,22 @@
-import type Client from 'pocketbase';
-import {
-	ListResult,
-	type Record,
-	type RecordSubscription,
-	type RecordListQueryParams,
-	type ClientResponseError
-} from 'pocketbase';
 import {
 	createInfiniteQuery,
 	useQueryClient,
-	type FetchQueryOptions,
-	type QueryKey,
-	type InfiniteData,
 	type CreateInfiniteQueryResult,
-	type QueryClient
+	type FetchQueryOptions,
+	type InfiniteData,
+	type QueryClient,
+	type QueryKey
 } from '@tanstack/svelte-query';
+import {
+	ListResult,
+	type ClientResponseError,
+	type Record,
+	type RecordListQueryParams,
+	type RecordService,
+	type RecordSubscription
+} from 'pocketbase';
 
-import { setAutoFreeze, produce, type Draft } from 'immer';
+import { produce, setAutoFreeze, type Draft } from 'immer';
 
 import { realtimeStoreExpand } from '../internal';
 import { collectionKeys } from '../query-key-factory';
@@ -31,7 +31,7 @@ const infiniteCollectionStoreCallback = async <
 	queryClient: QueryClient,
 	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	perPage: number,
 	queryParams: RecordListQueryParams | undefined = undefined,
 	sortFunction?: (a: T, b: T) => number,
@@ -237,7 +237,7 @@ const infiniteCollectionStoreCallback = async <
 export const infiniteCollectionQueryInitialData = async <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	{
 		page = 1,
 		perPage = 20,
@@ -262,7 +262,7 @@ export const infiniteCollectionQueryPrefetch = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	{
 		staleTime = Infinity,
 		page = 1,
@@ -314,7 +314,7 @@ export const createInfiniteCollectionQuery = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
 >(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	{
 		staleTime = Infinity,
 		refetchOnReconnect = 'always',

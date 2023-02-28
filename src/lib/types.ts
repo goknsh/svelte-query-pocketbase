@@ -1,16 +1,16 @@
 import type {
+	CreateInfiniteQueryOptions,
+	CreateQueryOptions,
+	FetchQueryOptions,
+	QueryKey
+} from '@tanstack/svelte-query';
+import type {
 	Admin,
 	Record,
 	RecordListQueryParams,
 	RecordQueryParams,
 	RecordSubscription
 } from 'pocketbase';
-import type {
-	CreateInfiniteQueryOptions,
-	CreateQueryOptions,
-	FetchQueryOptions,
-	QueryKey
-} from '@tanstack/svelte-query';
 
 /**
  * A known user, used in the `userStore`.

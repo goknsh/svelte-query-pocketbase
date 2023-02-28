@@ -19,7 +19,7 @@ specifiers:
   husky: 8.0.3
   immer: ^9.0.19
   lodash: 4.17.21
-  pocketbase: ^0.10.0
+  pocketbase: ^0.11.1
   postcss: 8.4.21
   prettier: 2.8.3
   prettier-plugin-svelte: 2.9.0
@@ -35,7 +35,7 @@ specifiers:
 dependencies:
   '@tanstack/svelte-query': 4.22.4_svelte@3.55.1
   immer: 9.0.19
-  pocketbase: 0.10.1
+  pocketbase: 0.11.1
   svelte: 3.55.1
 
 devDependencies:
@@ -3732,8 +3732,8 @@ packages:
       pathe: 1.1.0
     dev: true
 
-  /pocketbase/0.10.1:
-    resolution: {integrity: sha512-FMBhF+9o2AmdKJYbfz2qunnk4Q5/efYMRcukdQF49UfhsIuaSYl39fSPN1l880bYI4XAvDDeySAjK1MlxrK37A==}
+  /pocketbase/0.11.1:
+    resolution: {integrity: sha512-4DeKvS3Yqd8zx4/sHQhalACK5fl2/UfzBTLvCFVrTNBqXpy1epmOaXEiUjHNoZYLFw1IMeksRRaWZR8akARwOQ==}
     dev: false
 
   /postcss-import/14.1.0_postcss@8.4.21:

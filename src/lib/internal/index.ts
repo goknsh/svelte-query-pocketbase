@@ -1,5 +1,4 @@
-import type Client from 'pocketbase';
-import type { Record } from 'pocketbase';
+import type { Record, RecordService } from 'pocketbase';
 
 /**
  * Meant for internal use, simply returns the expanded record if there is an expand query param.
@@ -10,7 +9,7 @@ import type { Record } from 'pocketbase';
  * @returns The expanded record.
  */
 export const realtimeStoreExpand = async <T extends Pick<Record, 'id'>>(
-	collection: ReturnType<Client['collection']>,
+	collection: RecordService,
 	record: T,
 	expand: string | undefined = undefined
 ): Promise<T> =>
