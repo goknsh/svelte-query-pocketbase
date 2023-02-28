@@ -19,7 +19,7 @@ import type {
 
 import { collectionKeys } from '../query-key-factory';
 import { realtimeStoreExpand } from '../internal';
-import type { CollectionStoreOptions, QueryPrefetchOptions } from '../types';
+import type { CollectionStoreOptions, CollectionQueryPrefetchOptions } from '../types';
 
 setAutoFreeze(false);
 
@@ -96,6 +96,13 @@ const collectionStoreCallback = async <
 	}
 };
 
+/**
+ * Meant for SSR use, simply returns all the records from a collection. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-initialdata) and this project's README.md for some examples.
+ *
+ * @param collection The collection from which to get all the records.
+ * @param [options.queryParams] The query params that will be passed on to `getFullList`.
+ * @returns The initial data required for a collection query, i.e. an array of Pocketbase records.
+ */
 export const createCollectionQueryInitialData = async <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
 >(
@@ -103,6 +110,16 @@ export const createCollectionQueryInitialData = async <
 	{ queryParams = undefined }: { queryParams?: RecordListQueryParams }
 ): Promise<Array<T>> => [...(await collection.getFullList<T>(undefined, queryParams))];
 
+/**
+ * Meant for SSR use, allows for prefetching queries on the server so that data is already available in the cache, and no initial fetch occurs client-side. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-prefetchquery) and this project's README.md for some examples.
+ *
+ * @param collection The collection from which to get all the records.
+ * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryKey] Provides the query key option for TanStack Query. By default, uses the `collectionKeys` function from this package.
+ * @param [options.staleTime] Provides the stale time option for TanStack Query. By default, `Infinity` since the query receives realtime updates. Note that the package will take care of automatically marking the query as stale when the last subscriber unsubscribes from this query.
+ * @param [options] The rest of the options are passed to the `prefetchQuery` function from TanStack Query, this library has no defaults for them.
+ * @returns The fully-configured options object that is ready to be passed on to the `prefetchQuery` function from TanStack Query.
+ */
 export const createCollectionQueryPrefetch = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
@@ -116,7 +133,7 @@ export const createCollectionQueryPrefetch = <
 			...(queryParams && queryParams)
 		}) as unknown as TQueryKey,
 		...options
-	}: QueryPrefetchOptions<Array<T>, ClientResponseError, Array<T>, TQueryKey> = {}
+	}: CollectionQueryPrefetchOptions<Array<T>, ClientResponseError, Array<T>, TQueryKey> = {}
 ): FetchQueryOptions<Array<T>, ClientResponseError, Array<T>, TQueryKey> => ({
 	staleTime,
 	queryKey,
@@ -124,6 +141,29 @@ export const createCollectionQueryPrefetch = <
 	queryFn: async () => await createCollectionQueryInitialData<T>(collection, { queryParams })
 });
 
+/**
+ * Creates a TanStack Query that updates an array of Pocketbase records in realtime.
+ *
+ * Notes:
+ * - When running server-side, the realtime subscription will not be created.
+ * - When a realtime update is received, after the action is handled, the `filterFunction` runs first, then `sortFunction` runs.
+ * - If a `create` action is received via the realtime subscription, the new record is added to the end of the query's data array before the `filterFunction` and `sortFunction` run.
+ *
+ * @param collection The collection from which to get all the records.
+ * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.sortFunction] `compareFn` from `Array.prototype.sort` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `sort` in `queryParams`.
+ * @param [options.filterFunction] `predicate` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `filter` in `queryParams`.
+ * @param [options.filterFunctionThisArg] `thisArg` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `filter` in `queryParams`.
+ * @param [options.disableRealtime] Provides an option to disable realtime updates to the array of Pocketbase records. By default, `false` since we want the array of Pocketbase records to be updated in realtime. If set to `true`, a realtime subscription to the Pocketbase server is never sent. Don't forget to set `options.staleTime` to a more appropriate value than `Infinity` you disable realtime updates.
+ * @param [options.invalidateQueryOnRealtimeError] Provides an option to invalidate the query if a realtime error occurs. By default, `true` since if a realtime error occurs, the query's data would be stale.
+ * @param [options.onRealtimeUpdate] This function is called with the realtime action every time an realtime action is received.
+ * @param [options.queryKey] Provides the query key option for TanStack Query. By default, uses the `collectionKeys` function from this package.
+ * @param [options.staleTime] Provides the stale time option for TanStack Query. By default, `Infinity` since the query receives realtime updates. Note that the package will take care of automatically marking the query as stale when the last subscriber unsubscribes from this query.
+ * @param [options.refetchOnReconnect] Provides the refetch on reconnection option for TanStack Query. By default, `'always'` since the query we wouldn't be receiving realtime updates if connection was lost.
+ * @param [options.enable] Provides the enabled option for TanStack Query. By default, `true` since we want the query to be enabled. If set to `false`, this also disables realtime updates to the Pocketbase record.
+ * @param [options] The rest of the options are passed to the `createQuery` function from TanStack Query, this library has no defaults for them.
+ * @returns The same object as TanStack Query's `createQuery`, with an array of Pocketbase records that updates in realtime.
+ */
 export const createCollectionQuery = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
@@ -140,6 +180,7 @@ export const createCollectionQuery = <
 		enabled = true,
 		disableRealtime = false,
 		invalidateQueryOnRealtimeError = true,
+		debug = false,
 		...options
 	}: CollectionStoreOptions<T[], ClientResponseError, T[], TQueryKey, T, RecordSubscription<T>> = {}
 ): CreateQueryResult<T[], ClientResponseError> => {
@@ -170,17 +211,19 @@ export const createCollectionQuery = <
 							options.filterFunctionThisArg
 						)
 							.then(() => {
-								console.log(
-									`(C) ${JSON.stringify(queryKey)}: updating with realtime action:`,
-									data.action,
-									data.record.id
-								);
+								debug &&
+									console.log(
+										`(C) ${JSON.stringify(queryKey)}: updating with realtime action:`,
+										data.action,
+										data.record.id
+									);
 							})
 							.catch((e) => {
-								console.log(
-									`(C) ${JSON.stringify(queryKey)}: invalidating query due to callback error:`,
-									e
-								);
+								debug &&
+									console.log(
+										`(C) ${JSON.stringify(queryKey)}: invalidating query due to callback error:`,
+										e
+									);
 								if (invalidateQueryOnRealtimeError) {
 									queryClient.invalidateQueries({ queryKey, exact: true });
 								}
@@ -188,12 +231,13 @@ export const createCollectionQuery = <
 						options.onRealtimeUpdate?.(data);
 					})
 					.catch((e) => {
-						console.log(
-							`(C) [${JSON.stringify(
-								queryKey
-							)}]: invalidating query due to realtime subscription error:`,
-							e
-						);
+						debug &&
+							console.log(
+								`(C) [${JSON.stringify(
+									queryKey
+								)}]: invalidating query due to realtime subscription error:`,
+								e
+							);
 						if (invalidateQueryOnRealtimeError) {
 							queryClient.invalidateQueries({ queryKey, exact: true });
 						}
@@ -202,10 +246,10 @@ export const createCollectionQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log(`(C) ${JSON.stringify(queryKey)}: subscribing to changes...`);
+			debug && console.log(`(C) ${JSON.stringify(queryKey)}: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log(`(C) ${JSON.stringify(queryKey)}: unsubscribing from store.`);
+				debug && console.log(`(C) ${JSON.stringify(queryKey)}: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
@@ -216,11 +260,12 @@ export const createCollectionQuery = <
 						) ||
 						Object.keys(queryParams ?? {}).length > 0
 					) {
-						console.log(
-							`(C) ${JSON.stringify(
-								queryKey
-							)}: no realtime listeners or query has queryParams, marking query as stale.`
-						);
+						debug &&
+							console.log(
+								`(C) ${JSON.stringify(
+									queryKey
+								)}: no realtime listeners or query has queryParams, marking query as stale.`
+							);
 						queryClient.invalidateQueries({ queryKey, exact: true });
 					}
 				})();

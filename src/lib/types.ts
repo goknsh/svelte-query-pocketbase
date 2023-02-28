@@ -12,27 +12,29 @@ import type {
 	QueryKey
 } from '@tanstack/svelte-query';
 
+/**
+ * A known user, used in the `userStore`.
+ */
 export interface KnownUser {
 	isLoggedIn: true;
 }
 
+/**
+ * An unknown user or logged in Admin, used in the `userStore`.
+ */
 export interface UnknownUser {
 	isLoggedIn: false;
 }
 
+/**
+ * Type-narrowing to differentiate between `Record` and `Admin`.
+ */
 export const isRecord = (test: Record | Admin | null): test is Record =>
 	test !== null && 'collectionId' in test && 'collectionName' in test && 'expand' in test;
 
-export interface InfiniteQueryPrefetchOptions<
-	TQueryFnData = unknown,
-	TError = unknown,
-	TData = TQueryFnData,
-	TQueryKey extends QueryKey = QueryKey
-> extends QueryPrefetchOptions<TQueryFnData, TError, TData, TQueryKey> {
-	page?: number;
-	perPage?: number;
-}
-
+/**
+ * Interface for the options parameter in `createRecordQueryPrefetch`.
+ */
 export interface QueryPrefetchOptions<
 	TQueryFnData = unknown,
 	TError = unknown,
@@ -42,6 +44,34 @@ export interface QueryPrefetchOptions<
 	queryParams?: RecordQueryParams;
 }
 
+/**
+ * Interface for the options parameter in `createCollectionQueryPrefetch`.
+ */
+export interface CollectionQueryPrefetchOptions<
+	TQueryFnData = unknown,
+	TError = unknown,
+	TData = TQueryFnData,
+	TQueryKey extends QueryKey = QueryKey
+> extends QueryPrefetchOptions<TQueryFnData, TError, TData, TQueryKey> {
+	queryParams?: RecordListQueryParams;
+}
+
+/**
+ * Interface for the options parameter in `infiniteCollectionQueryPrefetch`.
+ */
+export interface InfiniteQueryPrefetchOptions<
+	TQueryFnData = unknown,
+	TError = unknown,
+	TData = TQueryFnData,
+	TQueryKey extends QueryKey = QueryKey
+> extends CollectionQueryPrefetchOptions<TQueryFnData, TError, TData, TQueryKey> {
+	page?: number;
+	perPage?: number;
+}
+
+/**
+ * Interface for the options parameter in `createRecordQuery`.
+ */
 export interface RecordStoreOptions<
 	TQueryFnData = unknown,
 	TError = unknown,
@@ -65,8 +95,12 @@ export interface RecordStoreOptions<
 	 * This callback will fire any time the realtime subscription receives an update.
 	 */
 	onRealtimeUpdate?: (data: TRealtimeUpdate) => void;
+	debug?: boolean;
 }
 
+/**
+ * Interface for the options parameter in `createCollectionQuery`.
+ */
 export interface CollectionStoreOptions<
 	TQueryFnData = unknown,
 	TError = unknown,
@@ -85,6 +119,9 @@ export interface CollectionStoreOptions<
 	filterFunctionThisArg?: any;
 }
 
+/**
+ * Interface for the options parameter in `createInfiniteCollectionQuery`.
+ */
 export interface InfiniteCollectionStoreOptions<
 	TQueryFnData = unknown,
 	TError = unknown,
@@ -110,4 +147,5 @@ export interface InfiniteCollectionStoreOptions<
 		array: TQueryFnDataSingular[]
 	) => boolean;
 	filterFunctionThisArg?: any;
+	debug?: boolean;
 }

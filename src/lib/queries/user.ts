@@ -1,11 +1,11 @@
 import type Client from 'pocketbase';
 import type { BaseAuthStore, Record } from 'pocketbase';
-import { type Loadable, readable } from '@square/svelte-store';
+import { readable, type Readable } from 'svelte/store';
 
 import { type KnownUser, type UnknownUser, isRecord } from '../types';
 
 /**
- * Svelte store wrapper around the authenticated user that updates in realtime.
+ * Svelte store wrapper around the authenticated Pocketbase user that updates in realtime.
  *
  * NOTE: This store returns an `UnknownUser` if the authenticated user is `Admin`.
  *
@@ -19,7 +19,7 @@ export const userStore = <
 	pocketbase: Client,
 	extractKnownUser: (authStore: CustomAuthStore) => CustomKnownUser = (authStore) =>
 		({ isLoggedIn: true, ...authStore.model } as CustomKnownUser)
-): Loadable<CustomKnownUser | UnknownUser> => {
+): Readable<CustomKnownUser | UnknownUser> => {
 	return readable<CustomKnownUser | UnknownUser>(
 		pocketbase.authStore.model !== null &&
 			pocketbase.authStore.isValid &&

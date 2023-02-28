@@ -225,6 +225,15 @@ const infiniteCollectionStoreCallback = async <
 	}
 };
 
+/**
+ * Meant for SSR use, simply returns paginated records from a collection. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-initialdata) and this project's README.md for some examples.
+ *
+ * @param collection The collection from which to get paginated records.
+ * @param [options.page] The page that will be passed on to `getList`. By default, `1`.
+ * @param [options.perPage] The per page that will be passed on to `getList`. By default, `20`.
+ * @param [options.queryParams] The query params that will be passed on to `getList`.
+ * @returns The initial data required for a collection query, i.e. an array of Pocketbase records.
+ */
 export const infiniteCollectionQueryInitialData = async <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>
 >(
@@ -235,6 +244,19 @@ export const infiniteCollectionQueryInitialData = async <
 		queryParams = undefined
 	}: { page?: number; perPage?: number; queryParams?: RecordListQueryParams } = {}
 ): Promise<ListResult<T>> => ({ ...(await collection.getList<T>(page, perPage, queryParams)) });
+
+/**
+ * Meant for SSR use, allows for prefetching queries on the server so that data is already available in the cache, and no initial fetch occurs client-side. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-prefetchquery) and this project's README.md for some examples.
+ *
+ * @param collection The collection from which to get paginated records.
+ * @param [options.page] The page that will be passed on to `getList`. By default, `1`.
+ * @param [options.perPage] The per page that will be passed on to `getList`. By default, `20`.
+ * @param [options.queryParams] The query params are simply passed on to `getList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryKey] Provides the query key option for TanStack Infinite Query. By default, uses the `collectionKeys` function from this package.
+ * @param [options.staleTime] Provides the stale time option for TanStack Infinite Query. By default, `Infinity` since the query receives realtime updates. Note that the package will take care of automatically marking the query as stale when the last subscriber unsubscribes from this query.
+ * @param [options] The rest of the options are passed to the `prefetchQuery` function from TanStack Infinite Query, this library has no defaults for them.
+ * @returns The fully-configured options object that is ready to be passed on to the `prefetchQuery` function from TanStack Query.
+ */
 
 export const infiniteCollectionQueryPrefetch = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
@@ -262,6 +284,32 @@ export const infiniteCollectionQueryPrefetch = <
 		await infiniteCollectionQueryInitialData<T>(collection, { page, perPage, queryParams })
 });
 
+/**
+ * Creates a TanStack Infinite Query that updates paginated Pocketbase records in realtime.
+ *
+ * Notes:
+ * - When running server-side, the realtime subscription will not be created.
+ * - When a realtime update is received, after the action is handled, the `filterFunction` runs first, then `sortFunction` runs, then the records are chunked into pages and the relevant pages are marked as stale, if needed.
+ *
+ * @param collection The collection from which to get paginated records.
+ * @param [options.page] The page that will be passed on to `getList`. By default, `1`.
+ * @param [options.perPage] The per page that will be passed on to `getList`. By default, `20`.
+ * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.keepCurrentPageOnly] Only keeps data from the current page of the infinite query, and discards the rest of the data when a page is changed.
+ * @param [options.sortFunction] `compareFn` from `Array.prototype.sort` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `sort` in `queryParams`.
+ * @param [options.filterFunction] `predicate` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `filter` in `queryParams`.
+ * @param [options.filterFunctionThisArg] `thisArg` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `filter` in `queryParams`.
+ * @param [options.disableRealtime] Provides an option to disable realtime updates to the array of Pocketbase records. By default, `false` since we want the array of Pocketbase records to be updated in realtime. If set to `true`, a realtime subscription to the Pocketbase server is never sent. Don't forget to set `options.staleTime` to a more appropriate value than `Infinity` you disable realtime updates.
+ * @param [options.invalidateQueryOnRealtimeError] Provides an option to invalidate the query if a realtime error occurs. By default, `true` since if a realtime error occurs, the query's data would be stale.
+ * @param [options.onRealtimeUpdate] This function is called with the realtime action every time an realtime action is received.
+ * @param [options.queryKey] Provides the query key option for TanStack Infinite Query. By default, uses the `collectionKeys` function from this package.
+ * @param [options.staleTime] Provides the stale time option for TanStack Infinite Query. By default, `Infinity` since the query receives realtime updates. Note that the package will take care of automatically marking the query as stale when the last subscriber unsubscribes from this query.
+ * @param [options.refetchOnReconnect] Provides the refetch on reconnection option for TanStack Infinite Query. By default, `'always'` since the query we wouldn't be receiving realtime updates if connection was lost.
+ * @param [options.enable] Provides the enabled option for TanStack Infinite Query. By default, `true` since we want the query to be enabled. If set to `false`, this also disables realtime updates to the Pocketbase record.
+ * @param [options] The rest of the options are passed to the `createQuery` function from TanStack Infinite Query, this library has no defaults for them.
+ * @returns The same object as TanStack Query's `createInfiniteQuery`, with paginated Pocketbase records that update in realtime.
+ */
+
 export const createInfiniteCollectionQuery = <
 	T extends Pick<Record, 'id' | 'updated'> = Pick<Record, 'id' | 'updated'>,
 	TQueryKey extends QueryKey = QueryKey
@@ -283,6 +331,7 @@ export const createInfiniteCollectionQuery = <
 		disableRealtime = false,
 		invalidateQueryOnRealtimeError = true,
 		keepCurrentPageOnly = false,
+		debug = false,
 		...options
 	}: InfiniteCollectionStoreOptions<
 		ListResult<T>,
@@ -359,17 +408,19 @@ export const createInfiniteCollectionQuery = <
 							options.filterFunctionThisArg
 						)
 							.then(() => {
-								console.log(
-									`(IC) ${JSON.stringify(queryKey)}: updating with realtime action:`,
-									data.action,
-									data.record.id
-								);
+								debug &&
+									console.log(
+										`(IC) ${JSON.stringify(queryKey)}: updating with realtime action:`,
+										data.action,
+										data.record.id
+									);
 							})
 							.catch((e) => {
-								console.log(
-									`(IC) ${JSON.stringify(queryKey)}: invalidating query due to callback error:`,
-									e
-								);
+								debug &&
+									console.log(
+										`(IC) ${JSON.stringify(queryKey)}: invalidating query due to callback error:`,
+										e
+									);
 								if (invalidateQueryOnRealtimeError) {
 									queryClient.invalidateQueries({ queryKey, exact: true });
 								}
@@ -377,12 +428,13 @@ export const createInfiniteCollectionQuery = <
 						options.onRealtimeUpdate?.(data);
 					})
 					.catch((e) => {
-						console.log(
-							`(IC) [${JSON.stringify(
-								queryKey
-							)}]: invalidating query due to realtime subscription error:`,
-							e
-						);
+						debug &&
+							console.log(
+								`(IC) [${JSON.stringify(
+									queryKey
+								)}]: invalidating query due to realtime subscription error:`,
+								e
+							);
 						if (invalidateQueryOnRealtimeError) {
 							queryClient.invalidateQueries({ queryKey, exact: true });
 						}
@@ -391,15 +443,15 @@ export const createInfiniteCollectionQuery = <
 
 	return {
 		subscribe: (...args) => {
-			console.log(`(IC) ${JSON.stringify(queryKey)}: subscribing to changes...`);
+			debug && console.log(`(IC) ${JSON.stringify(queryKey)}: subscribing to changes...`);
 			let unsubscriber = store.subscribe(...args);
 			return () => {
-				console.log(`(IC) ${JSON.stringify(queryKey)}: unsubscribing from store.`);
+				debug && console.log(`(IC) ${JSON.stringify(queryKey)}: unsubscribing from store.`);
 				(async () => {
 					await (
 						await unsubscribePromise
 					)();
-					console.log(`(IC) ${JSON.stringify(queryKey)}: marking query as stale.`);
+					debug && console.log(`(IC) ${JSON.stringify(queryKey)}: marking query as stale.`);
 					queryClient.invalidateQueries({ queryKey, exact: true });
 				})();
 				return unsubscriber();
