@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 1.0.2
+
+### Patch Changes
+
+- [`b37004e`](https://github.com/goknsh/svelte-query-pocketbase/commit/b37004ea9d42e72e07ad58ac35a588024bebc0bd) Thanks [@goknsh](https://github.com/goknsh)! - chore: mark ^0.14.0 as compatible
+
 ## 1.0.1
 
 ### Patch Changes
