@@ -17,7 +17,7 @@ import type {
 	RecordSubscription
 } from 'pocketbase';
 
-import { realtimeStoreExpand } from '../internal';
+import { realtimeStoreExpand, reconcileOptionalFields } from '../internal';
 import { collectionKeys } from '../query-key-factory';
 import type { CollectionQueryPrefetchOptions, CollectionStoreOptions } from '../types';
 
@@ -31,7 +31,7 @@ const collectionStoreCallback = async <
 	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
 	collection: RecordService,
-	queryParams: RecordListQueryParams | undefined = undefined,
+	queryParams: Pick<RecordListQueryParams, 'expand'> | undefined = undefined,
 	sortFunction?: (a: T, b: T) => number,
 	filterFunction?: (value: T, index: number, array: T[]) => boolean,
 	filterFunctionThisArg?: any
@@ -100,7 +100,7 @@ const collectionStoreCallback = async <
  * Meant for SSR use, simply returns all the records from a collection. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-initialdata) and this project's README.md for some examples.
  *
  * @param collection The collection from which to get all the records.
- * @param [options.queryParams] The query params that will be passed on to `getFullList`.
+ * @param [options.queryParams] The query params that will be passed on to `getFullList`. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @returns The initial data required for a collection query, i.e. an array of Pocketbase records.
  */
 export const createCollectionQueryInitialData = async <
@@ -108,13 +108,15 @@ export const createCollectionQueryInitialData = async <
 >(
 	collection: RecordService,
 	{ queryParams = undefined }: { queryParams?: RecordListQueryParams }
-): Promise<Array<T>> => [...(await collection.getFullList<T>(queryParams))];
+): Promise<Array<T>> => [
+	...(await collection.getFullList<T>(reconcileOptionalFields(queryParams)))
+];
 
 /**
  * Meant for SSR use, allows for prefetching queries on the server so that data is already available in the cache, and no initial fetch occurs client-side. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-prefetchquery) and this project's README.md for some examples.
  *
  * @param collection The collection from which to get all the records.
- * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @param [options.queryKey] Provides the query key option for TanStack Query. By default, uses the `collectionKeys` function from this package.
  * @param [options.staleTime] Provides the stale time option for TanStack Query. By default, `Infinity` since the query receives realtime updates. Note that the package will take care of automatically marking the query as stale when the last subscriber unsubscribes from this query.
  * @param [options] The rest of the options are passed to the `prefetchQuery` function from TanStack Query, this library has no defaults for them.
@@ -150,7 +152,7 @@ export const createCollectionQueryPrefetch = <
  * - If a `create` action is received via the realtime subscription, the new record is added to the end of the query's data array before the `filterFunction` and `sortFunction` run.
  *
  * @param collection The collection from which to get all the records.
- * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @param [options.sortFunction] `compareFn` from `Array.prototype.sort` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `sort` in `queryParams`.
  * @param [options.filterFunction] `predicate` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `filter` in `queryParams`.
  * @param [options.filterFunctionThisArg] `thisArg` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `filter` in `queryParams`.

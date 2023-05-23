@@ -8,8 +8,8 @@ dependencies:
     specifier: ^9.0.19
     version: 9.0.19
   pocketbase:
-    specifier: ^0.11.1 || ^0.12.0 || ^0.13.0 || ^0.14.0
-    version: 0.11.1
+    specifier: ^0.11.1 || ^0.12.0 || ^0.13.0 || ^0.14.0 || ^0.15.0
+    version: 0.15.0
   svelte:
     specifier: ^3.54.0
     version: 3.55.1
@@ -3760,8 +3760,8 @@ packages:
       pathe: 1.1.0
     dev: true
 
-  /pocketbase@0.11.1:
-    resolution: {integrity: sha512-4DeKvS3Yqd8zx4/sHQhalACK5fl2/UfzBTLvCFVrTNBqXpy1epmOaXEiUjHNoZYLFw1IMeksRRaWZR8akARwOQ==}
+  /pocketbase@0.15.0:
+    resolution: {integrity: sha512-JaJIgMF0iiEiE7IS1q/SkQ3+a74HPnTXiuquHISSoZc23FHEOLXzDS+J8J1kWZmwFZmfqD0VDftlUUMs743J9w==}
     dev: false
 
   /postcss-import@14.1.0(postcss@8.4.21):

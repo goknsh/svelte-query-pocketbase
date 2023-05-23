@@ -18,7 +18,7 @@ import {
 
 import { produce, setAutoFreeze, type Draft } from 'immer';
 
-import { realtimeStoreExpand } from '../internal';
+import { realtimeStoreExpand, reconcileOptionalFields } from '../internal';
 import { collectionKeys } from '../query-key-factory';
 import type { InfiniteCollectionStoreOptions, InfiniteQueryPrefetchOptions } from '../types';
 
@@ -33,7 +33,7 @@ const infiniteCollectionStoreCallback = async <
 	subscription: RecordSubscription<T>,
 	collection: RecordService,
 	perPage: number,
-	queryParams: RecordListQueryParams | undefined = undefined,
+	queryParams: Pick<RecordListQueryParams, 'expand'> | undefined = undefined,
 	sortFunction?: (a: T, b: T) => number,
 	filterFunction?: (value: T, index: number, array: T[]) => boolean,
 	filterFunctionThisArg?: any
@@ -231,7 +231,7 @@ const infiniteCollectionStoreCallback = async <
  * @param collection The collection from which to get paginated records.
  * @param [options.page] The page that will be passed on to `getList`. By default, `1`.
  * @param [options.perPage] The per page that will be passed on to `getList`. By default, `20`.
- * @param [options.queryParams] The query params that will be passed on to `getList`.
+ * @param [options.queryParams] The query params that will be passed on to `getList`. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @returns The initial data required for a collection query, i.e. an array of Pocketbase records.
  */
 export const infiniteCollectionQueryInitialData = async <
@@ -243,7 +243,9 @@ export const infiniteCollectionQueryInitialData = async <
 		perPage = 20,
 		queryParams = undefined
 	}: { page?: number; perPage?: number; queryParams?: RecordListQueryParams } = {}
-): Promise<ListResult<T>> => ({ ...(await collection.getList<T>(page, perPage, queryParams)) });
+): Promise<ListResult<T>> => ({
+	...(await collection.getList<T>(page, perPage, reconcileOptionalFields(queryParams)))
+});
 
 /**
  * Meant for SSR use, allows for prefetching queries on the server so that data is already available in the cache, and no initial fetch occurs client-side. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-prefetchquery) and this project's README.md for some examples.
@@ -251,7 +253,7 @@ export const infiniteCollectionQueryInitialData = async <
  * @param collection The collection from which to get paginated records.
  * @param [options.page] The page that will be passed on to `getList`. By default, `1`.
  * @param [options.perPage] The per page that will be passed on to `getList`. By default, `20`.
- * @param [options.queryParams] The query params are simply passed on to `getList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryParams] The query params are simply passed on to `getList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @param [options.queryKey] Provides the query key option for TanStack Infinite Query. By default, uses the `collectionKeys` function from this package.
  * @param [options.staleTime] Provides the stale time option for TanStack Infinite Query. By default, `Infinity` since the query receives realtime updates. Note that the package will take care of automatically marking the query as stale when the last subscriber unsubscribes from this query.
  * @param [options] The rest of the options are passed to the `prefetchQuery` function from TanStack Infinite Query, this library has no defaults for them.
@@ -294,7 +296,7 @@ export const infiniteCollectionQueryPrefetch = <
  * @param collection The collection from which to get paginated records.
  * @param [options.page] The page that will be passed on to `getList`. By default, `1`.
  * @param [options.perPage] The per page that will be passed on to `getList`. By default, `20`.
- * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryParams] The query params are simply passed on to `getFullList` for the initial data fetch, and `getOne` for realtime updates. If the `expand` key is provided, the record is expanded every time a realtime update is received. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @param [options.keepCurrentPageOnly] Only keeps data from the current page of the infinite query, and discards the rest of the data when a page is changed.
  * @param [options.sortFunction] `compareFn` from `Array.prototype.sort` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `sort` in `queryParams`.
  * @param [options.filterFunction] `predicate` from `Array.prototype.filter` that runs when an action is received via the realtime subscription. This is used since Pocketbase realtime subscriptions does not support `filter` in `queryParams`.

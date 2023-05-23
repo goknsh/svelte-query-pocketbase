@@ -72,7 +72,12 @@ Creates a TanStack Query that updates a Pocketbase record in realtime. View the 
 	const someRecord = createRecordQuery<SomeCollectionResponse>(
 		pocketbase.collection(Collections.SomeCollection),
 		'some_id',
-		{ queryParams: { expand: 'some_field' } }
+		{
+			queryParams: {
+				expand: 'some_field',
+				fields: 'some_field' // the library will internally add id and updated to this
+			}
+		}
 	);
 </script>
 
@@ -287,7 +292,8 @@ Creates a TanStack Query that updates an array of Pocketbase records in realtime
 			queryParams: {
 				expand: 'some_field',
 				sort: '-created', // sort by date created, descending
-				filter: 'created >= "2022-01-01 00:00:00"'
+				filter: 'created >= "2022-01-01 00:00:00"',
+				fields: 'some_field' // the library will internally add id and updated to this
 			},
 			// sortFunction and filterFunction are applied after a realtime update is applied
 			sortFunction: (a, b) => new Date(a.created) - new Date(b.created) // sort by date created, descending
@@ -515,7 +521,8 @@ Creates a TanStack Infinite Query that updates paginated Pocketbase records in r
 			queryParams: {
 				expand: 'some_field',
 				sort: '-created', // sort by date created, descending
-				filter: 'created >= "2022-01-01 00:00:00"'
+				filter: 'created >= "2022-01-01 00:00:00"',
+				fields: 'some_field' // the library will internally add id and updated to this
 			},
 			// sortFunction and filterFunction are applied after a realtime update is applied
 			sortFunction: (a, b) => new Date(a.created) - new Date(b.created) // sort by date created, descending

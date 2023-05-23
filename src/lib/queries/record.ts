@@ -15,7 +15,7 @@ import type {
 	RecordSubscription
 } from 'pocketbase';
 
-import { realtimeStoreExpand } from '../internal';
+import { realtimeStoreExpand, reconcileOptionalFields } from '../internal';
 import { collectionKeys } from '../query-key-factory';
 import type { QueryPrefetchOptions, RecordStoreOptions } from '../types';
 
@@ -27,7 +27,7 @@ const createRecordQueryCallback = async <
 	queryKey: TQueryKey,
 	subscription: RecordSubscription<T>,
 	collection: RecordService,
-	queryParams: RecordQueryParams | undefined = undefined
+	queryParams: Pick<RecordQueryParams, 'expand'> | undefined = undefined
 ) => {
 	let data = queryClient.getQueryData<T | null>(queryKey);
 
@@ -63,7 +63,7 @@ const createRecordQueryCallback = async <
  *
  * @param collection The collection from which to get the record.
  * @param id The `id` of the record to get from the collection.
- * @param [options.queryParams] The query params that will be passed on to `getOne`.
+ * @param [options.queryParams] The query params that will be passed on to `getOne`. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @returns The initial data required for a record query, i.e. the Pocketbase record.
  */
 export const createRecordQueryInitialData = <
@@ -72,14 +72,14 @@ export const createRecordQueryInitialData = <
 	collection: RecordService,
 	id: string,
 	{ queryParams = undefined }: { queryParams?: RecordQueryParams }
-): Promise<T> => collection.getOne<T>(id, queryParams);
+): Promise<T> => collection.getOne<T>(id, reconcileOptionalFields(queryParams));
 
 /**
  * Meant for SSR use, allows for prefetching queries on the server so that data is already available in the cache, and no initial fetch occurs client-side. See [TanStack's documentation](https://tanstack.com/query/v4/docs/svelte/ssr#using-prefetchquery) and this project's README.md for some examples.
  *
  * @param collection The collection from which to get the record.
  * @param id The `id` of the record to get from the collection.
- * @param [options.queryParams] The query params are simply passed on to `getOne` and if the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryParams] The query params are simply passed on to `getOne` and if the `expand` key is provided, the record is expanded every time a realtime update is received. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @param [options.queryKey] Provides the query key option for TanStack Query. By default, uses the `collectionKeys` function from this package.
  * @param [options.staleTime] Provides the stale time option for TanStack Query. By default, `Infinity` since the query receives realtime updates. Note that the package will take care of automatically marking the query as stale when the last subscriber unsubscribes from this query.
  * @param [options] The rest of the options are passed to the `prefetchQuery` function from TanStack Query, this library has no defaults for them.
@@ -117,7 +117,7 @@ export const createRecordQueryPrefetch = <
  *
  * @param collection The collection from which to get the record.
  * @param id The `id` of the record to get from the collection.
- * @param [options.queryParams] The query params are simply passed on to `getOne` and if the `expand` key is provided, the record is expanded every time a realtime update is received.
+ * @param [options.queryParams] The query params are simply passed on to `getOne` and if the `expand` key is provided, the record is expanded every time a realtime update is received. If you use `fields` to specify optional fields, note that `id` and `updated` will be added to it since the library uses them internally.
  * @param [options.disableRealtime] Provides an option to disable realtime updates to the Pocketbase record. By default, `false` since we want the Pocketbase record to be updated in realtime. If set to `true`, a realtime subscription to the Pocketbase server is never sent. Don't forget to set `options.staleTime` to a more appropriate value than `Infinity` you disable realtime updates.
  * @param [options.invalidateQueryOnRealtimeError] Provides an option to invalidate the query if a realtime error occurs. By default, `true` since if a realtime error occurs, the query's data would be stale.
  * @param [options.onRealtimeUpdate] This function is called with the realtime action every time an realtime action is received.

@@ -4,9 +4,11 @@
 	import { createInfiniteCollectionQuery } from '$lib/queries/infinite-collection';
 	import { onMount } from 'svelte';
 
-	const pocketbase = new Pocketbase('https://voel.local');
+	const pocketbase = new Pocketbase('https://pb.voel.local');
 
-	const query = createInfiniteCollectionQuery(pocketbase.collection('test'));
+	const query = createInfiniteCollectionQuery(pocketbase.collection('test'), {
+		queryParams: { fields: 'name' }
+	});
 
 	// onMount(() => {
 	// 	setTimeout(() => {
