@@ -1,5 +1,11 @@
 # svelte-query-pocketbase
 
+## 1.1.0
+
+### Minor Changes
+
+- [`f5c1603`](https://github.com/goknsh/svelte-query-pocketbase/commit/f5c1603c24bf00c52057b050c72bf200a49d6cb2) Thanks [@goknsh](https://github.com/goknsh)! - feat: add support for the optional fields introduced in v0.15.0 of the Pocketbase SDK. If the `fields` key is present in the `queryParams` object passed to any of the libraries functions, `id` and `updated` will be added since the library uses them internally.
+
 ## 1.0.2
 
 ### Patch Changes
