@@ -1,3 +1,6 @@
+> [!WARNING]
+> The repository is no longer being worked on, and the npm package has been deprecated. Feel free to fork and continue development.
+
 # svelte-query-pocketbase
 
 TanStack Query wrappers around Pocketbase Realtime for Svelte.
